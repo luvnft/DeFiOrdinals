@@ -1,0 +1,38 @@
+[
+  {
+    "inscription_id": "1c96a435422403c56c028abae545c560a334d19c1f19ba8d80001627ca0ee80ei0",
+    "inscription_number": 8048489,
+    "content_type": "image/png",
+    "owner_address": "bc1pjj4uzw3svyhezxqq7cvqdxzf48kfhklxuahyx8v8u69uqfmt0udqlhwhwz",
+    "owner_output": "51bb5e16f21651853d93598630269d19e01fbcf64a2d065168a6a9372eaff51b:0",
+    "genesis_address": "bc1put8eyz7c4ucp256euvgelqy9zsav0mmvvj2pyrwred6dw8hd2tespd7xcs",
+    "genesis_output": "1c96a435422403c56c028abae545c560a334d19c1f19ba8d80001627ca0ee80e:0",
+    "timestamp": "2023-05-20T06:52:49.000Z",
+    "metadata": null,
+    "metaprotocol": null,
+    "sat": 1479919133343724,
+    "content_url": "https://ordiscan.com/content/1c96a435422403c56c028abae545c560a334d19c1f19ba8d80001627ca0ee80ei0",
+    "parent_inscription_id": null,
+    "delegate_inscription_id": null,
+    "satributes": [],
+    "submodules": []
+  },
+  {
+    "inscription_id": "629dc5d9394f5c235329a1d7ccb7547282ed5c659e7b7c0be29db3ea317f239bi0",
+    "inscription_number": 326273,
+    "content_type": "image/png",
+    "owner_address": "bc1pjj4uzw3svyhezxqq7cvqdxzf48kfhklxuahyx8v8u69uqfmt0udqlhwhwz",
+    "owner_output": "ec19fc02556d2444e3b241b9ce1e80525cabfac38bd471405f95e420fa4a2809:0",
+    "genesis_address": "bc1pkrdc86y9letk2yy2rv87jx24vzfjq6l3jqnkgfajfkwwrlrlfkhs8kh90g",
+    "genesis_output": "629dc5d9394f5c235329a1d7ccb7547282ed5c659e7b7c0be29db3ea317f239b:0",
+    "timestamp": "2023-03-06T22:12:54.000Z",
+    "metadata": null,
+    "metaprotocol": null,
+    "sat": 1720363466026357,
+    "content_url": "https://ordiscan.com/content/629dc5d9394f5c235329a1d7ccb7547282ed5c659e7b7c0be29db3ea317f239bi0",
+    "parent_inscription_id": null,
+    "delegate_inscription_id": null,
+    "satributes": [],
+    "submodules": []
+  }
+]

@@ -1,0 +1,21 @@
+{
+  "name": "backend_",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "start": "nodemon asset_server.js"
+  },
+  "keywords": [],
+  "author": "Abishek J, Waheed",
+  "license": "ISC",
+  "dependencies": {
+    "@dfinity/agent": "^0.19.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
