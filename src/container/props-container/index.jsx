@@ -13,6 +13,7 @@ import {
   setAgent,
   setAirDropData,
   setAirPoints,
+  setApprovedCollection,
   setAptosValue,
   setBtcValue,
   setCkBtcActorAgent,
@@ -261,74 +262,6 @@ export const propsContainer = (Component) => {
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [dispatch]);
 
-    // useEffect(() => {
-    //   (async () => {
-    //     try {
-    //       if (window?.ic?.plug) {
-    //         const isVerified = await verifyConnection();
-    //         if (!ckEthAgent && isVerified) {
-    //           // Eth canister for transactions
-    //           const ckEthAgent = await window.ic?.plug.createActor({
-    //             canisterId: process.env.REACT_APP_ETH_CANISTER_ID,
-    //             interfaceFactory: ckEthIdlFactory,
-    //           });
-
-    //           dispatch(setCkEthAgent(ckEthAgent));
-    //         }
-    //       }
-    //     } catch (error) {
-    //       Notify("error", "Please reconnect the wallet!");
-    //     }
-    //   })();
-    //   // eslint-disable-next-line react-hooks/exhaustive-deps
-    // }, [dispatch]);
-
-    // useEffect(() => {
-    //   (async () => {
-    //     try {
-    //       const result = await window.ic.plug.isConnected();
-    //       console.log("result", result);
-    //       if (window?.ic?.plug) {
-    //         const isVerified = await verifyConnection();
-    //         if (!withdrawAgent && isVerified) {
-    //           // My Ordinal Canister for withdraw purpose
-    //           const withdrawAgent = await window.ic?.plug.createActor({
-    //             canisterId: process.env.REACT_APP_ORDINAL_CANISTER_ID,
-    //             interfaceFactory: apiFactory,
-    //           });
-
-    //           dispatch(setwithdrawAgent(withdrawAgent));
-    //         }
-    //       }
-    //     } catch (error) {
-    //       Notify("error", "Please reconnect the wallet!");
-    //     }
-    //   })();
-    //   // eslint-disable-next-line react-hooks/exhaustive-deps
-    // }, [dispatch]);
-
-    // useEffect(() => {
-    //   (async () => {
-    //     try {
-    //       if (window?.ic?.plug) {
-    //         const isVerified = await verifyConnection();
-    //         if (!affiliateCanister && isVerified) {
-    //           // Btc canister for transactions
-    //           const affiliateAgent = await window.ic?.plug.createActor({
-    //             canisterId: process.env.REACT_APP_AFFILIATES_CANISTER_ID,
-    //             interfaceFactory: AffiliatesIdlFactory,
-    //           });
-
-    //           dispatch(setAffiliateCanister(affiliateAgent));
-    //         }
-    //       }
-    //     } catch (error) {
-    //       Notify("error", "Please reconnect the wallet!");
-    //     }
-    //   })();
-    //   // eslint-disable-next-line react-hooks/exhaustive-deps
-    // }, [dispatch, principalId]);
-
     useEffect(() => {
       (async () => {
         if (
@@ -411,13 +344,25 @@ export const propsContainer = (Component) => {
 
     useEffect(() => {
       (async () => {
-        if (
-          collections.length &&
-          api_agent &&
-          (location.pathname === "/" || location.pathname === "/dashboard")
-        ) {
-          const collection = await api_agent.get_collections();
-          dispatch(setCollection(JSON.parse(collection)));
+        if (api_agent) {
+          const result = await api_agent.get_collections();
+          const collections = JSON.parse(result);
+          console.log("collections", collections);
+          if (collections[0]?.symbol) {
+            const collectionPromise = collections.map(async (asset) => {
+              return new Promise(async (resolve, reject) => {
+                const { data } = await API_METHODS.get(
+                  `${apiUrl.Asset_server_base_url}/api/v2/fetch/collection/${asset.symbol}`
+                );
+                resolve({ ...asset, ...data });
+              });
+            });
+
+            const collectionDetails = await Promise.all(collectionPromise);
+            console.log("collectionDetails", collectionDetails);
+            dispatch(setApprovedCollection(collectionDetails));
+          }
+          dispatch(setCollection(collections));
         }
       })();
       // eslint-disable-next-line react-hooks/exhaustive-deps

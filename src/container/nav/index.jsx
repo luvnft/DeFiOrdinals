@@ -501,10 +501,8 @@ const Nav = (props) => {
       <Row
         className="font-style"
         onClick={() => {
-          if (!petraAddress) {
-            navigate("/lending");
-            setOpen(false);
-          }
+          navigate("/lending");
+          setOpen(false);
         }}
       >
         Lending
@@ -514,10 +512,8 @@ const Nav = (props) => {
       <Row
         className="font-style "
         onClick={() => {
-          if (!petraAddress) {
-            navigate("/dashboard");
-            setOpen(false);
-          }
+          navigate("/dashboard");
+          setOpen(false);
         }}
       >
         Dashboard
@@ -527,10 +523,8 @@ const Nav = (props) => {
       <Row
         className="font-style"
         onClick={() => {
-          if (!petraAddress) {
-            navigate("/staking");
-            setOpen(false);
-          }
+          navigate("/staking");
+          setOpen(false);
         }}
       >
         Staking
@@ -540,10 +534,8 @@ const Nav = (props) => {
       <Row
         className="font-style"
         onClick={() => {
-          if (!petraAddress) {
-            navigate("/airdrop");
-            setOpen(false);
-          }
+          navigate("/airdrop");
+          setOpen(false);
         }}
       >
         Air Drop
@@ -783,10 +775,8 @@ const Nav = (props) => {
                       : "font-style headerCompanyName"
                   } pointer heading-one `}
                   onClick={() => {
-                    if (!petraAddress) {
-                      navigate("/lending");
-                      dispatch(setLendHeader(false));
-                    }
+                    navigate("/lending");
+                    dispatch(setLendHeader(false));
                   }}
                   ref={ref2}
                 >
@@ -801,10 +791,8 @@ const Nav = (props) => {
                       : "font-style headerCompanyName"
                   } pointer heading-one `}
                   onClick={() => {
-                    if (!petraAddress) {
-                      navigate("/dashboard");
-                      dispatch(setLendHeader(false));
-                    }
+                    navigate("/dashboard");
+                    dispatch(setLendHeader(false));
                   }}
                   ref={ref3}
                 >
@@ -818,10 +806,8 @@ const Nav = (props) => {
                       : "font-style headerCompanyName"
                   } pointer heading-one  `}
                   onClick={() => {
-                    if (!petraAddress) {
-                      navigate("/staking");
-                      dispatch(setLendHeader(false));
-                    }
+                    navigate("/staking");
+                    dispatch(setLendHeader(false));
                   }}
                   ref={ref4}
                 >
@@ -835,10 +821,8 @@ const Nav = (props) => {
                       : "font-style headerCompanyName"
                   } pointer heading-one  `}
                   onClick={() => {
-                    if (!petraAddress) {
-                      navigate("/airdrops");
-                      dispatch(setLendHeader(false));
-                    }
+                    navigate("/airdrops");
+                    dispatch(setLendHeader(false));
                   }}
                   ref={ref4}
                 >
@@ -1237,6 +1221,11 @@ const Nav = (props) => {
                         {sliceAddress(magicEdenAddress, 9)}{" "}
                         {addressRendererWithCopy(magicEdenAddress)}
                       </>
+                    ) : petraAddress ? (
+                      <>
+                        {sliceAddress(petraAddress, 9)}{" "}
+                        {addressRendererWithCopy(petraAddress)}
+                      </>
                     ) : (
                       "---"
                     )}
@@ -1248,7 +1237,8 @@ const Nav = (props) => {
             <Col>
               {walletState.active.includes(XVERSE_WALLET_KEY) ||
               walletState.active.includes(UNISAT_WALLET_KEY) ||
-              walletState.active.includes(MAGICEDEN_WALLET_KEY) ? null : (
+              walletState.active.includes(MAGICEDEN_WALLET_KEY) ||
+              walletState.active.includes(PETRA_WALLET_KEY) ? null : (
                 <CustomButton
                   className="font-size-18 black-bg text-color-one border-none"
                   title={"Connect"}

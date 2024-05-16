@@ -41,11 +41,11 @@ export const publicRoutes = [
   //   path: `/staking`,
   //   component: lazy(() => import("../pages/staking")),
   // },
-  // {
-  //   name: "Lending",
-  //   path: `/lending`,
-  //   component: lazy(() => import("../pages/lending")),
-  // },
+  {
+    name: "Lending",
+    path: `/lending`,
+    component: lazy(() => import("../pages/lending")),
+  },
   {
     name: "Veiw transactions",
     path: "/supply/transactions",

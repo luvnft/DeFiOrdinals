@@ -20,7 +20,8 @@ const state = {
   affiliateCanister: null,
   LendRequests: null,
   allAssets: [],
-  isPlugError: false
+  isPlugError: false,
+  approvedCollections: null
 };
 
 const constantSlice = createSlice({
@@ -37,6 +38,10 @@ const constantSlice = createSlice({
 
     setCollection: (state, action) => {
       state.collection = action.payload;
+    },
+
+    setApprovedCollection: (state, action) => {
+      state.approvedCollections = action.payload;
     },
 
     setBtcValue: (state, action) => {
@@ -125,5 +130,6 @@ export const {
   setwithdrawAgent,
   setAllAssets,
   setAffiliateCanister,
+  setApprovedCollection
 } = constantSlice.actions;
 export default constantSlice.reducer;

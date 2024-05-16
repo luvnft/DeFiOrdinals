@@ -13,6 +13,7 @@ import {
   Tooltip,
   Typography,
 } from "antd";
+import _ from "lodash";
 import axios from "axios";
 import { load } from "cheerio";
 import React, { useEffect, useState } from "react";
@@ -676,7 +677,16 @@ const Dashboard = (props) => {
               : magicEdenAddress
             : WAHEED_ADDRESS
         );
-        result?.length ? setBorrowData(result) : setBorrowData([]);
+        const grouped = _.groupBy(result, "collectionSymbol");
+        console.log("grouped", grouped);
+        const uniqueData = result?.filter(
+          (obj, index, self) =>
+            index ===
+            self.findIndex((o) => o.collectionSymbol === obj.collectionSymbol)
+        );
+        console.log("uniqueData", uniqueData);
+
+        uniqueData?.length ? setBorrowData(uniqueData) : setBorrowData([]);
         setLoadingState((prev) => ({ ...prev, isBorrowData: false }));
       }
     })();
@@ -1668,7 +1678,7 @@ const Dashboard = (props) => {
       ),
     },
   ];
-
+  console.log("borrowData", borrowData);
   const yourLendsItems = [
     {
       key: "lend-1",

@@ -12,7 +12,7 @@ import { API_METHODS, apiUrl } from "../../utils/common";
 const Home = (props) => {
   const { reduxState } = props.redux;
   const { api_agent } = props.wallet;
-  const collections = reduxState.constant.collection;
+  const collections = reduxState.constant.approvedCollections;
   const btcvalue = reduxState.constant.btcvalue;
   const ethvalue = reduxState.constant.ethvalue;
   const aptosvalue = reduxState.constant.aptosvalue;
@@ -32,20 +32,6 @@ const Home = (props) => {
     totalVolInUSD: null,
     activeVolInUSD: null,
   });
-  const [approvedCollections, setApprovedCollections] = useState([
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-  ]);
 
   useEffect(() => {
     (async () => {
@@ -57,6 +43,7 @@ const Home = (props) => {
         }));
       }
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [api_agent]);
 
   useEffect(() => {
@@ -69,25 +56,8 @@ const Home = (props) => {
         }));
       }
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [api_agent]);
-
-  useEffect(() => {
-    (async () => {
-      if (collections[0]?.symbol) {
-        const collectionPromise = collections.map(async (asset) => {
-          return new Promise(async (resolve, reject) => {
-            const { data } = await API_METHODS.get(
-              `${apiUrl.Asset_server_base_url}/api/v2/fetch/collection/${asset.symbol}`
-            );
-            resolve({ ...asset, ...data });
-          });
-        });
-
-        const collectionDetails = await Promise.all(collectionPromise);
-        setApprovedCollections(collectionDetails);
-      }
-    })();
-  }, [collections]);
 
   gsap.to(".box", {
     y: 10,
@@ -112,7 +82,7 @@ const Home = (props) => {
       </Row>
 
       <Row justify={"start"} gutter={32}>
-        {approvedCollections.map((collection, index) => {
+        {collections.map((collection, index) => {
           const name = collection?.data?.name;
           const nameSplitted = collection?.data?.name?.split(" ");
           let modifiedName = "";
