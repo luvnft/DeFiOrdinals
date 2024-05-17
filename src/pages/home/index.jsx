@@ -82,7 +82,7 @@ const Home = (props) => {
       </Row>
 
       <Row justify={"start"} gutter={32}>
-        {collections.map((collection, index) => {
+        {collections?.map((collection, index) => {
           const name = collection?.data?.name;
           const nameSplitted = collection?.data?.name?.split(" ");
           let modifiedName = "";

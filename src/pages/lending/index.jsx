@@ -389,7 +389,9 @@ const Dashboard = (props) => {
               align="start"
               className={`input-themed amount-input`}
             >
-              <Text className={`font-size-16 letter-spacing-small`}>
+              <Text
+                className={`font-size-16 text-color-one letter-spacing-small`}
+              >
                 Amount
               </Text>
               <Input
@@ -442,7 +444,9 @@ const Dashboard = (props) => {
 
           <Col md={11}>
             <Flex vertical align="start" className={`input-themed`}>
-              <Text className={`font-size-16 letter-spacing-small`}>
+              <Text
+                className={`font-size-16 text-color-one letter-spacing-small`}
+              >
                 Interest
               </Text>
               <Input
