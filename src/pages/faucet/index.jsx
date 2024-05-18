@@ -10,7 +10,7 @@ import Notify from "../../component/notification";
 import { propsContainer } from "../../container/props-container";
 import { setAirDropData, setAirPoints } from "../../redux/slice/constant";
 
-const AirDrops = (props) => {
+const Faucet = (props) => {
   const { reduxState, dispatch, isPlugError } = props.redux;
   const { location } = props.router;
   const affiliateCanister = reduxState.constant.affiliateCanister;
@@ -131,7 +131,7 @@ const AirDrops = (props) => {
     <>
       <Row>
         <Col>
-          <h1 className="font-xlarge gradient-text-one">Airdrops</h1>
+          <h1 className="font-xlarge gradient-text-one">Faucet</h1>
         </Col>
       </Row>
 
@@ -273,4 +273,4 @@ const AirDrops = (props) => {
   );
 };
 
-export default propsContainer(AirDrops);
+export default propsContainer(Faucet);

@@ -8,6 +8,8 @@ import LoadingWrapper from "../component/loading-wrapper";
 import store, { persistor } from "../redux/store";
 import "./../App.css";
 import MainLayout from "./layout";
+import { PetraWallet } from "petra-plugin-wallet-adapter";
+import { AptosWalletAdapterProvider } from "@aptos-labs/wallet-adapter-react";
 
 const App = () => {
   const satelliteId = process.env.REACT_APP_SATELLITE_ID;
@@ -19,18 +21,22 @@ const App = () => {
       }))();
   }, [satelliteId]);
 
+  const wallets = [new PetraWallet()];
+
   return (
     <React.Fragment>
       <Provider store={store}>
-        <PersistGate loading={null} persistor={persistor}>
-          <LoadingWrapper>
-            <Router>
-              <WalletStandardProvider>
-                <MainLayout />
-              </WalletStandardProvider>
-            </Router>
-          </LoadingWrapper>
-        </PersistGate>
+        <AptosWalletAdapterProvider plugins={wallets} autoConnect={true}>
+          <PersistGate loading={null} persistor={persistor}>
+            <LoadingWrapper>
+              <Router>
+                <WalletStandardProvider>
+                  <MainLayout />
+                </WalletStandardProvider>
+              </Router>
+            </LoadingWrapper>
+          </PersistGate>
+        </AptosWalletAdapterProvider>
       </Provider>
     </React.Fragment>
   );

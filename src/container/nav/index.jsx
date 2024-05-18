@@ -51,9 +51,11 @@ import {
   setXverseOrdinals,
   setXversePayment,
 } from "../../redux/slice/wallet";
+// import { AptosFaucetClient } from "@aptos-labs/aptos-faucet-client";
 import {
   API_METHODS,
   APTOS_BRAND_KEY,
+  IS_DEV,
   MAGICEDEN_WALLET_KEY,
   PETRA_WALLET_KEY,
   PLUG_WALLET_KEY,
@@ -72,6 +74,7 @@ const Nav = (props) => {
   const { useBreakpoint } = Grid;
   const breakPoint = useBreakpoint();
   const { wallets } = useWallets();
+
   const { location, navigate } = props.router;
   const { dispatch, reduxState } = props.redux;
 
@@ -93,6 +96,8 @@ const Nav = (props) => {
   const [current, setCurrent] = useState();
 
   const avatar = process.env.REACT_APP_AVATAR;
+  const devNet = process.env.REACT_APP_APTOS_DEVNET;
+  const testNet = process.env.REACT_APP_APTOS_TESTNET;
   const SatsConnectNamespace = "sats-connect:";
 
   const { confirm } = Modal;
@@ -219,6 +224,19 @@ const Nav = (props) => {
   function isSatsConnectCompatibleWallet(wallet) {
     return SatsConnectNamespace in wallet.features;
   }
+  // console.log(devNet);
+  // const callFaucet = async (amount, address) => {
+  //   const faucetClient = new AptosFaucetClient({
+  //     BASE: IS_DEV ? devNet : testNet,
+  //   });
+  //   const request = {
+  //     amount,
+  //     address,
+  //   };
+  //   const response = await faucetClient.fund({ requestBody: request });
+  //   return response.txn_hashes;
+  // };
+
   const connectWallet = async (walletName) => {
     if (walletName === XVERSE_WALLET_KEY) {
       const getAddressOptions = {
@@ -816,17 +834,17 @@ const Nav = (props) => {
                 <Text className="font-xsmall color-grey">|</Text>
                 <Text
                   className={`${
-                    location.pathname.includes("airdrops")
+                    location.pathname.includes("faucet")
                       ? "headertitle headerStyle"
                       : "font-style headerCompanyName"
                   } pointer heading-one  `}
                   onClick={() => {
-                    navigate("/airdrops");
+                    navigate("/faucet");
                     dispatch(setLendHeader(false));
                   }}
                   ref={ref4}
                 >
-                  Airdrops
+                  Faucet
                 </Text>
                 <Text className="font-xsmall color-grey">|</Text>
                 <Text
