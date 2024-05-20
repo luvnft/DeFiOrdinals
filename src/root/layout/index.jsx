@@ -60,7 +60,7 @@ const MainLayout = () => {
   const ORDINALS_MEDIUM = process.env.REACT_APP_ORDINALS_MEDIUM;
   const TWITTER_LINK = process.env.REACT_APP_TWITTER_LINK;
 
-  const businessName = `My Ordinals Loan`;
+  const businessName = `ORdefi`;
   const footerText = `All rights reserved © Copyright ${new Date().getFullYear()}`;
 
   const redirectToBorrow = () => {
