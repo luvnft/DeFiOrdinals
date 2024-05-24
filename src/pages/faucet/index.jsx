@@ -1,131 +1,109 @@
-import { Principal } from "@dfinity/principal";
-import { Col, Popconfirm, Row, Tooltip } from "antd";
-import { useEffect, useState } from "react";
-import claimed from "../../assets/airdrop/claimed.png";
-import unclaimed from "../../assets/airdrop/uncliamed.png";
-import CustomButton from "../../component/Button";
-import { StatCard } from "../../component/card";
-import WalletUI from "../../component/download-wallets-UI";
-import Notify from "../../component/notification";
+import { Col, Row } from "antd";
 import { propsContainer } from "../../container/props-container";
-import { setAirDropData, setAirPoints } from "../../redux/slice/constant";
+import {
+  Account,
+  Aptos,
+  AptosConfig,
+  parseTypeTag,
+  NetworkToNetworkName,
+  Network,
+  AccountAddress,
+  U64,
+  Ed25519PrivateKey,
+} from "@aptos-labs/ts-sdk";
+import { useEffect } from "react";
+import { Principal } from "@dfinity/principal";
 
 const Faucet = (props) => {
   const { reduxState, dispatch, isPlugError } = props.redux;
-  const { location } = props.router;
-  const affiliateCanister = reduxState.constant.affiliateCanister;
-  const airDropData = reduxState.constant.airDropData;
-  const airPoints = reduxState.constant.airPoints;
   const walletState = reduxState.wallet;
-  const activeWallet = reduxState.wallet.active;
-  const searchParams = new URLSearchParams(location.search);
-  const referralCode = searchParams.get("referral");
+  const devNet = process.env.REACT_APP_APTOS_DEVNET;
+  const petraAddress = walletState.petra.address;
 
-  let plugAddress = walletState.plug.principalId;
-  const xverseAddress = walletState.xverse.ordinals.address;
-  const unisatAddress = walletState.unisat.address;
-  const magicEdenAddress = walletState.magicEden.ordinals.address;
+  const APTOS_COIN = "0x1::aptos_coin::AptosCoin";
+  const COIN_STORE = `0x1::coin::CoinStore<${APTOS_COIN}>`;
+  const ALICE_INITIAL_BALANCE = 100_000_000;
+  const BOB_INITIAL_BALANCE = 100;
+  const TRANSFER_AMOUNT = 100;
+  const APTOS_NETWORK =
+    NetworkToNetworkName[process.env.APTOS_NETWORK] || Network.DEVNET;
 
-  const airdrop = process.env.REACT_APP_AIRDROP;
+  const config = new AptosConfig({ network: APTOS_NETWORK });
+  const aptos = new Aptos(config);
+  console.log("aptos", aptos);
 
-  const [unclaimedPoints, setUnclaimedPoints] = useState(0);
+  const alice = Account.generate();
+  const bob = Account.generate();
 
-  const fetchAirDrop = async () => {
-    try {
-      const airDropData = await affiliateCanister.getAirDrops(
-        Principal.fromText(plugAddress)
-      );
-      if (airDropData.ordinalAddress) {
-        dispatch(setAirDropData(airDropData));
-      }
-    } catch (error) {
-      console.log("Get Air Drop error", error);
-    }
+  console.log("alice", alice);
+  console.log("bob", bob);
+
+  const balance = async (sdk, name, address) => {
+    let balance = await sdk.getAccountResource({
+      accountAddress: address,
+      resourceType: COIN_STORE,
+    });
+
+    let amount = Number(balance.coin.value);
+
+    console.log(`${name}'s balance is: ${amount}`);
+    return amount;
   };
 
-  const handleRegister = async () => {
-    try {
-      await affiliateCanister.setAirdrops(
-        xverseAddress
-          ? xverseAddress
-          : unisatAddress
-          ? unisatAddress
-          : magicEdenAddress,
-        referralCode ? referralCode : "NONE"
-      );
-      await fetchAirDrop();
-    } catch (error) {
-      console.log("set Air Drop Error", error);
-    }
+  const initAliceAccount = async () => {
+    await aptos.fundAccount({
+      accountAddress: alice.accountAddress,
+      amount: ALICE_INITIAL_BALANCE,
+    });
+
+    await aptos.fundAccount({
+      accountAddress: bob.accountAddress,
+      amount: BOB_INITIAL_BALANCE,
+    });
+
+    await balance(aptos, "Alice", alice.accountAddress);
+    await balance(aptos, "Bob", bob.accountAddress);
+
+    // Transfer between users
+    // const txn = await aptos.transaction.build.simple({
+    //   sender: alice.accountAddress,
+    //   data: {
+    //     function: "0x1::coin::transfer",
+    //     typeArguments: [parseTypeTag(APTOS_COIN)],
+    //     functionArguments: [
+    //       AccountAddress.from(bob.accountAddress),
+    //       new U64(TRANSFER_AMOUNT),
+    //     ],
+    //   },
+    // });
+
+    // console.log("\n=== Transfer transaction ===\n");
+    // let committedTxn = await aptos.signAndSubmitTransaction({
+    //   signer: alice,
+    //   transaction: txn,
+    // });
+    // console.log(`Committed transaction: ${committedTxn.hash}`);
+    // await aptos.waitForTransaction({ transactionHash: committedTxn.hash });
+
+    // console.log("\n=== Balances after transfer ===\n");
+    // await balance(aptos, "Alice", alice.accountAddress);
+    // await balance(aptos, "Bob", bob.accountAddress);
   };
 
-  const handleClaim = async () => {
-    try {
-      if (unclaimedPoints >= 10) {
-        const claimRes = await affiliateCanister.claimPoints();
-        if (claimRes) {
-          await fetchUserPoints();
-          await fetchUnclaimedPoints();
-          Notify("success", `Successfully claimed ${claimRes}`);
-        } else {
-          Notify("error", `Something went wrong, try again later!`);
-        }
-      } else {
-        Notify("warning", "You should have atleast 10 points to claim!");
-      }
-    } catch (error) {
-      console.log("claim Error", error);
-    }
-  };
-
-  const fetchUserPoints = async () => {
-    try {
-      const claimedPoints = await affiliateCanister.getUserPoints(
-        Principal.fromText(plugAddress)
-      );
-      dispatch(setAirPoints(Number(claimedPoints)));
-    } catch (error) {
-      console.log("Get Air Drop error", error);
-    }
-  };
-
-  const fetchUnclaimedPoints = async () => {
-    try {
-      const unclaimedPoints = await affiliateCanister.getUnclaimPoints(
-        Principal.fromText(plugAddress)
-      );
-      setUnclaimedPoints(Number(unclaimedPoints));
-    } catch (error) {
-      console.log("Get Air Drop error", error);
-    }
-  };
-
-  useEffect(() => {
-    (async () => {
-      if (
-        plugAddress &&
-        affiliateCanister &&
-        (xverseAddress || unisatAddress || magicEdenAddress)
-      ) {
-        await fetchUnclaimedPoints();
-      }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    affiliateCanister,
-    plugAddress,
-    unisatAddress,
-    xverseAddress,
-    magicEdenAddress,
-  ]);
-
-  useEffect(() => {
-    if (activeWallet.length === 0) {
-      dispatch(setAirPoints(0));
-      dispatch(setAirDropData({}));
-      setUnclaimedPoints(0);
-    }
-  }, [activeWallet, dispatch]);
+  // useEffect(() => {
+  //   initAliceAccount();
+  //   // to derive an account with a Single Sender Ed25519 key scheme
+  //   const privateKey = new Ed25519PrivateKey(
+  //     "0xbf0ca24ae7f35be68564b394678bd563ec1412168c86dd35ff3f302f41a0e165"
+  //   );
+  //   const accountAddress = AccountAddress.from(petraAddress);
+  //   const account = Account.fromPrivateKey({
+  //     privateKey,
+  //     address: accountAddress,
+  //     legacy: false,
+  //   });
+  //   console.log("account", account);
+  // }, []);
 
   return (
     <>
@@ -135,7 +113,7 @@ const Faucet = (props) => {
         </Col>
       </Row>
 
-      <Row justify={"center"}>
+      {/* <Row justify={"center"}>
         <Col>
           {activeWallet?.length === 2 && !isPlugError ? (
             <>
@@ -268,7 +246,7 @@ const Faucet = (props) => {
             <WalletUI isAirdrop={true} isPlugError={isPlugError} />
           )}
         </Col>
-      </Row>
+      </Row> */}
     </>
   );
 };

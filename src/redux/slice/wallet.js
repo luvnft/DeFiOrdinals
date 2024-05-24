@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { MAGICEDEN_WALLET_KEY, PETRA_WALLET_KEY, PLUG_WALLET_KEY, UNISAT_WALLET_KEY, XVERSE_WALLET_KEY } from "../../utils/common";
+import { MAGICEDEN_WALLET_KEY, MARTIN_WALLET_KEY, NIGHTLT_WALLET_KEY, PETRA_WALLET_KEY, PLUG_WALLET_KEY, UNISAT_WALLET_KEY, XVERSE_WALLET_KEY } from "../../utils/common";
 
 const state = {
   xverse: {
@@ -25,6 +25,14 @@ const state = {
     principalId: null,
   },
   petra: {
+    publicKey: null,
+    address: null,
+  },
+  martin: {
+    publicKey: null,
+    address: null,
+  },
+  nightly: {
     publicKey: null,
     address: null,
   },
@@ -74,16 +82,40 @@ const walletSlice = createSlice({
       state.petra.publicKey = action.payload;
     },
 
-    setPlugPrincipalId: (state, action) => {
-      state.plug.principalId = action.payload;
-      if (action.payload && !state.active.includes(PLUG_WALLET_KEY))
-        state.active.push(PLUG_WALLET_KEY);
-    },
 
     setPetraAddress: (state, action) => {
       state.petra.address = action.payload;
       if (action.payload && !state.active.includes(PETRA_WALLET_KEY))
         state.active.push(PETRA_WALLET_KEY);
+    },
+
+    setMartinAddress: (state, action) => {
+      state.martin.address = action.payload;
+      if (action.payload && !state.active.includes(MARTIN_WALLET_KEY))
+        state.active.push(MARTIN_WALLET_KEY);
+    },
+
+    setMartinKey: (state, action) => {
+      state.martin.publicKey = action.payload;
+    },
+
+    setNightlyActive: (state) => {
+      if (!state.active.includes(NIGHTLT_WALLET_KEY))
+        state.active.push(NIGHTLT_WALLET_KEY);
+    },
+
+    setNightlyAddress: (state, action) => {
+      state.nightly.address = action.payload;
+    },
+
+    setNightlyKey: (state, action) => {
+      state.nightly.publicKey = action.payload;
+    },
+
+    setPlugPrincipalId: (state, action) => {
+      state.plug.principalId = action.payload;
+      if (action.payload && !state.active.includes(PLUG_WALLET_KEY))
+        state.active.push(PLUG_WALLET_KEY);
     },
 
     clearWalletState: (state, action) => {
@@ -112,8 +144,13 @@ const walletSlice = createSlice({
           signature: null,
           btcBalance: 0.0,
         };
-      } else {
+      } else if (action.payload === PETRA_WALLET_KEY) {
         state.petra = {
+          publicKey: null,
+          address: null
+        }
+      } else {
+        state.martin = {
           publicKey: null,
           address: null
         }
@@ -127,10 +164,15 @@ export const {
   setPlugKey,
   setPetraKey,
   setXverseBtc,
+  setMartinKey,
+  setNightlyKey,
   setPetraAddress,
   setXversePayment,
+  setMartinAddress,
   clearWalletState,
   setXverseOrdinals,
+  setNightlyActive,
+  setNightlyAddress,
   setPlugPrincipalId,
   setXverseSignature,
   setUnisatCredentials,

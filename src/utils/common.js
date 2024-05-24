@@ -3,7 +3,11 @@ import plug from "../assets/wallet-logo/plug_logo.png";
 import unisat from "../assets/wallet-logo/unisat_logo.png";
 import petra from "../assets/wallet-logo/petra.png";
 import xverse from "../assets/wallet-logo/xverse_logo_whitebg.png";
+import martin from "../assets/wallet-logo/martin.jpg";
+import nightly from "../assets/wallet-logo/nightly.png";
 import magiceden from "../assets/brands/magiceden.svg"
+import okx from "../assets/wallet-logo/OKX_Logo.svg"
+import { Actor, HttpAgent } from "@dfinity/agent";
 
 export const API_METHODS = {
   get: axios.get,
@@ -24,12 +28,15 @@ export const PLUG_WALLET_KEY = "plug";
 export const XVERSE_WALLET_KEY = "xverse";
 export const UNISAT_WALLET_KEY = "unisat";
 export const PETRA_WALLET_KEY = "petra";
+export const MARTIN_WALLET_KEY = "martin";
+export const NIGHTLT_WALLET_KEY = "nightly";
+export const OKX_WALLET_KEY = "okx";
 export const MAGICEDEN_WALLET_KEY = "magiceden";
 export const APTOS_BRAND_KEY = "aptos";
 export const IS_USER = false;
 export const IS_DEV = true;
 
-const ordinals = process.env.REACT_APP_ORDINAL_CANISTER_ID;
+export const ordinals = process.env.REACT_APP_ORDINAL_CANISTER_ID;
 const btc = process.env.REACT_APP_BTC_CANISTER_ID;
 const eth = process.env.REACT_APP_ETH_CANISTER_ID;
 const affiliates = process.env.REACT_APP_AFFILIATES_CANISTER_ID;
@@ -64,7 +71,33 @@ export const allWallets = [
     image: petra,
     key: PETRA_WALLET_KEY,
   },
+  {
+    label: "MARTIN",
+    image: martin,
+    key: MARTIN_WALLET_KEY,
+  },
+  {
+    label: "NIGHTLY",
+    image: nightly,
+    key: NIGHTLT_WALLET_KEY,
+  },
+  {
+    label: "OKX",
+    image: okx,
+    key: OKX_WALLET_KEY,
+  },
 ];
+
+export const agentCreator = (apiFactory, canisterId) => {
+  const agent = new HttpAgent({
+    host: process.env.REACT_APP_HTTP_AGENT_ACTOR_HOST,
+  });
+  const API = Actor.createActor(apiFactory, {
+    agent,
+    canisterId,
+  });
+  return API;
+};
 
 export const sliceAddress = (address, slicePoint = 5) => (
   <>

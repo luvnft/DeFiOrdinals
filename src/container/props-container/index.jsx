@@ -25,7 +25,12 @@ import {
   setwithdrawAgent,
 } from "../../redux/slice/constant";
 import { setPlugPrincipalId } from "../../redux/slice/wallet";
-import { API_METHODS, apiUrl } from "../../utils/common";
+import {
+  API_METHODS,
+  agentCreator,
+  apiUrl,
+  ordinals,
+} from "../../utils/common";
 
 export const propsContainer = (Component) => {
   function ComponentWithRouterProp(props) {
@@ -46,6 +51,7 @@ export const propsContainer = (Component) => {
     const principalId = reduxState.wallet.plug.principalId;
     const xverseAddress = reduxState.wallet.xverse.ordinals.address;
     const unisatAddress = reduxState.wallet.unisat.address;
+    const aptosCanisterId = process.env.REACT_APP_APTOS_CANISTER_ID;
 
     const [isPlugError, setIsPlugError] = useState(false);
 
@@ -153,7 +159,7 @@ export const propsContainer = (Component) => {
 
             const agent = Actor.createActor(apiFactory, {
               agent: ordinalAgent,
-              canisterId: process.env.REACT_APP_ORDINAL_CANISTER_ID,
+              canisterId: process.env.REACT_APP_APTOS_CANISTER_ID,
             });
 
             dispatch(setAgent(agent));
@@ -344,29 +350,26 @@ export const propsContainer = (Component) => {
 
     useEffect(() => {
       (async () => {
-        if (api_agent) {
-          const result = await api_agent.get_collections();
-          const collections = JSON.parse(result);
-          console.log("collections", collections);
-          if (collections[0]?.symbol) {
-            const collectionPromise = collections.map(async (asset) => {
-              return new Promise(async (resolve, reject) => {
-                const { data } = await API_METHODS.get(
-                  `${apiUrl.Asset_server_base_url}/api/v2/fetch/collection/${asset.symbol}`
-                );
-                resolve({ ...asset, ...data });
-              });
+        const API = agentCreator(apiFactory, ordinals);
+        const result = await API.get_collections();
+        const collections = JSON.parse(result);
+        if (collections[0]?.symbol) {
+          const collectionPromise = collections.map(async (asset) => {
+            return new Promise(async (resolve, reject) => {
+              const { data } = await API_METHODS.get(
+                `${apiUrl.Asset_server_base_url}/api/v2/fetch/collection/${asset.symbol}`
+              );
+              resolve({ ...asset, ...data });
             });
+          });
 
-            const collectionDetails = await Promise.all(collectionPromise);
-            console.log("collectionDetails", collectionDetails);
-            dispatch(setApprovedCollection(collectionDetails));
-          }
-          dispatch(setCollection(collections));
+          const collectionDetails = await Promise.all(collectionPromise);
+          dispatch(setApprovedCollection(collectionDetails));
         }
+        dispatch(setCollection(collections));
       })();
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [api_agent, dispatch]);
+    }, [dispatch]);
 
     useEffect(() => {
       (async () => {
@@ -388,9 +391,9 @@ export const propsContainer = (Component) => {
     useEffect(() => {
       (async () => {
         if (principalId) {
-          const result = await window.ic.plug.isConnected();
+          const result = await window.ic?.plug.isConnected();
           if (result) {
-            if (window.ic.plug.principalId) {
+            if (window.ic?.plug.principalId) {
               dispatch(setPlugPrincipalId(window.ic.plug.principalId));
             }
             setIsPlugError(false);

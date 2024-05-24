@@ -230,12 +230,12 @@ const Dashboard = (props) => {
         >
           <TableComponent
             loading={{
-              spinning: approvedCollections === null,
+              spinning: !approvedCollections[0],
               indicator: <Bars />,
             }}
             pagination={false}
             rowKey={(e) => `${e?.inscriptionid}-${e?.mime_type}`}
-            tableData={approvedCollections}
+            tableData={approvedCollections[0] ? approvedCollections : []}
             tableColumns={approvedCollectionColumns}
           />
         </Col>

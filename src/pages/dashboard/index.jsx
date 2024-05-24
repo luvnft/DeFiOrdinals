@@ -14,6 +14,7 @@ import {
   Typography,
 } from "antd";
 import _ from "lodash";
+import Aptos from "../../assets/wallet-logo/aptos_logo.png";
 import axios from "axios";
 import { load } from "cheerio";
 import React, { useEffect, useState } from "react";
@@ -94,12 +95,14 @@ const Dashboard = (props) => {
 
   const walletState = reduxState.wallet;
   const btcValue = reduxState.constant.btcvalue;
+  const aptosvalue = reduxState.constant.aptosvalue;
   let plugAddress = walletState.plug.principalId;
   const collection = reduxState.constant.collection;
 
   const xverseAddress = walletState.xverse.ordinals.address;
   const unisatAddress = walletState.unisat.address;
   const magicEdenAddress = walletState.magicEden.ordinals.address;
+  const martinAddress = walletState.martin.address;
 
   const MEMPOOL_API = process.env.REACT_APP_MEMPOOL_API;
 
@@ -220,7 +223,7 @@ const Dashboard = (props) => {
     const value = e.target.value;
     let dotRegex = /\./;
     const interestAmount = (5 / 100) * value;
-    const repayment = Number((5 / 100) * value) + Number(value);
+    const repayment = interestAmount + Number(value);
     setAskModalData({
       ...askModalData,
       loanAmount: value,
@@ -283,7 +286,7 @@ const Dashboard = (props) => {
           const result = await API_METHODS.get(
             `${apiUrl.Asset_server_base_url}/api/v2/fetch/asset/${asset.id}`
           );
-          resolve(...result.data.data.tokens);
+          resolve(...result.data?.data?.tokens);
         });
       });
       const revealedPromise = await Promise.all(isFromApprovedAssets);
@@ -570,13 +573,13 @@ const Dashboard = (props) => {
             : magicEdenAddress
           : WAHEED_ADDRESS
       );
-
-      if (plugAddress && api_agent) {
+      console.log("supplies", supplies);
+      if ((plugAddress || martinAddress) && api_agent) {
         // Fetching asset id's which all are user lended.
         const getUsersBorrow = await api_agent.getUserBorrows(
           IS_USER
             ? Principal.fromText(
-                plugAddress
+                plugAddress || martinAddress
                 // "o2lff-sae6t-dvphr-tzeqm-uhynr-fnt5q-tks35-dh32k-rjapn-pedje-oae"
               )
             : Principal.fromText(process.env.REACT_APP_PLUG_CUSTODY_ADDRESS)
@@ -617,16 +620,17 @@ const Dashboard = (props) => {
       setAssetWithdrawStatus(obj);
 
       setLoadingState((prev) => ({ ...prev, isAssetSupplies: false }));
-      const supplyData = supplies.map((asset) => JSON.parse(asset));
-      const resultWithFloor = await getCollectionDetails(supplyData);
 
-      let obj_one = {};
-      resultWithFloor.forEach((data) => {
-        obj_one[data.id] = data.collection;
-      });
-      setAssetSuppliesFloor(obj_one);
+      const supplyData = supplies.map((asset) => JSON.parse(asset));
 
       if (supplyData.length) {
+        const resultWithFloor = await getCollectionDetails(supplyData);
+
+        let obj_one = {};
+        resultWithFloor.forEach((data) => {
+          obj_one[data.id] = data.collection;
+        });
+        setAssetSuppliesFloor(obj_one);
         setAssetSupplies(supplyData);
       } else {
         setAssetSupplies([]);
@@ -677,8 +681,7 @@ const Dashboard = (props) => {
               : magicEdenAddress
             : WAHEED_ADDRESS
         );
-        const grouped = _.groupBy(result, "collectionSymbol");
-        console.log("grouped", grouped);
+
         const uniqueData = result?.filter(
           (obj, index, self) =>
             index ===
@@ -1218,7 +1221,7 @@ const Dashboard = (props) => {
                 height={70}
               />
             )}
-            #{obj.inscriptionNumber}
+            {obj.displayName}
           </Flex>
         </>
       ),
@@ -1233,9 +1236,17 @@ const Dashboard = (props) => {
           <>
             {obj.collection.floorPrice ? (
               <Flex vertical align="center">
-                <span className="text-color-two font-small letter-spacing-small">
-                  {Number(obj.collection.floorPrice) / BTC_ZERO}
-                </span>
+                <Flex
+                  align="center"
+                  gap={3}
+                  className="text-color-two font-small letter-spacing-small"
+                >
+                  <img src={Aptos} alt="noimage" width={20} height={20} />
+                  {(
+                    ((obj.collection.floorPrice / BTC_ZERO) * btcValue) /
+                    aptosvalue
+                  ).toFixed(2)}
+                </Flex>
                 <span className="text-color-one font-xsmall letter-spacing-small">
                   ${" "}
                   {(
@@ -1678,7 +1689,7 @@ const Dashboard = (props) => {
       ),
     },
   ];
-  console.log("borrowData", borrowData);
+
   const yourLendsItems = [
     {
       key: "lend-1",
@@ -2245,7 +2256,7 @@ const Dashboard = (props) => {
         >
           <Col md={18}>
             <span className="text-color-two">
-              bc1pjj4uzw3svyhezxqq7cvqdxzf48kfhklxuahyx8v8u69uqfmt0udqlhwhwz
+              bc1p3s9nmllhlslppp6520gzfmnwa5hfmppns2zjrd5s6w06406gdg3snenzn7
             </span>
           </Col>
           <Col md={3}>
@@ -2856,7 +2867,7 @@ const Dashboard = (props) => {
                   placeholder={
                     askModalData.isApprovedCollection
                       ? (askModalData.floorPrice / BTC_ZERO).toFixed(8)
-                      : (10 / btcValue).toFixed(8)
+                      : (10 / aptosvalue).toFixed(8)
                   }
                   value={askModalData.loanAmount}
                   maxLength={8}
@@ -2867,7 +2878,9 @@ const Dashboard = (props) => {
                       handleAskModalInput(e);
                     }
                   }}
-                  prefix={<MdOutlineCurrencyBitcoin color="white" size={25} />}
+                  prefix={
+                    <img src={Aptos} alt="noimage" width={15} height={15} />
+                  }
                 />
               </Row>
             </Col>
@@ -2885,7 +2898,9 @@ const Dashboard = (props) => {
                 className="mt"
                 style={{ border: "none", fontSize: "18px" }}
                 placeholder="0"
-                prefix={<MdOutlineCurrencyBitcoin color="white" size={25} />}
+                prefix={
+                  <img src={Aptos} alt="noimage" width={15} height={15} />
+                }
               />
             </Row>
           </Col>

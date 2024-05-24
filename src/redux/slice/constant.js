@@ -21,7 +21,7 @@ const state = {
   LendRequests: null,
   allAssets: [],
   isPlugError: false,
-  approvedCollections: null
+  approvedCollections: ["", "", "", "", "", "", "", "", "", "", "", ""]
 };
 
 const constantSlice = createSlice({

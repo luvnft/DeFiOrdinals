@@ -2,12 +2,10 @@ import { Col, Grid, Row, Skeleton, Space, Tooltip, Typography } from "antd";
 import gsap from "gsap";
 import React, { useEffect, useState } from "react";
 import BallTriangle from "react-loading-icons/dist/esm/components/ball-triangle";
-import Bitcoin from "../../assets/coin_logo/ckbtc.png";
 import Aptos from "../../assets/wallet-logo/aptos_logo.png";
 import CardDisplay from "../../component/card";
 import Loading from "../../component/loading-wrapper/secondary-loader";
 import { propsContainer } from "../../container/props-container";
-import { API_METHODS, apiUrl } from "../../utils/common";
 
 const Home = (props) => {
   const { reduxState } = props.redux;

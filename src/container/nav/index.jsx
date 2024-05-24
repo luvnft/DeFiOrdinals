@@ -23,7 +23,6 @@ import { RiWallet3Fill } from "react-icons/ri";
 import { RxHamburgerMenu } from "react-icons/rx";
 import TailSpin from "react-loading-icons/dist/esm/components/tail-spin";
 import { AddressPurpose, BitcoinNetworkType, getAddress } from "sats-connect";
-import dfinity_backed from "../../assets/brands/icp_logo.png";
 import ordinals_O_logo from "../../assets/brands/ordinals_O_logo.png";
 import Bitcoin from "../../assets/coin_logo/ckbtc.png";
 import Eth from "../../assets/coin_logo/cketh.png";
@@ -42,6 +41,11 @@ import {
 import {
   clearWalletState,
   setMagicEdenCredentials,
+  setMartinAddress,
+  setMartinKey,
+  setNightlyActive,
+  setNightlyAddress,
+  setNightlyKey,
   setPetraAddress,
   setPetraKey,
   setPlugKey,
@@ -52,11 +56,14 @@ import {
   setXversePayment,
 } from "../../redux/slice/wallet";
 // import { AptosFaucetClient } from "@aptos-labs/aptos-faucet-client";
+import { getAdapter } from "../../utils/adapter";
 import {
   API_METHODS,
   APTOS_BRAND_KEY,
-  IS_DEV,
   MAGICEDEN_WALLET_KEY,
+  MARTIN_WALLET_KEY,
+  NIGHTLT_WALLET_KEY,
+  OKX_WALLET_KEY,
   PETRA_WALLET_KEY,
   PLUG_WALLET_KEY,
   UNISAT_WALLET_KEY,
@@ -83,6 +90,7 @@ const Nav = (props) => {
 
   const plugAddress = walletState.plug.principalId;
   const petraAddress = walletState.petra.address;
+  const martinAddress = walletState.martin.address;
   const xverseAddress = walletState.xverse.ordinals.address;
   const unisatAddress = walletState.unisat.address;
   const magicEdenAddress = walletState.magicEden.ordinals.address;
@@ -390,7 +398,7 @@ const Nav = (props) => {
       } catch (err) {
         console.log("magiceden error", err);
       }
-    } else {
+    } else if (walletName === PETRA_WALLET_KEY) {
       // Petra wallet
       const getAptosWallet = () => {
         if (APTOS_BRAND_KEY in window) {
@@ -416,6 +424,35 @@ const Nav = (props) => {
       } catch (error) {
         // { code: 4001, message: "User rejected the request."}
       }
+    } else if (walletName === MARTIN_WALLET_KEY) {
+      // Martin wallet
+      const getProvider = () => {
+        if ("martian" in window) {
+          return window.martian;
+        }
+        window.open("https://www.martianwallet.xyz/", "_blank");
+      };
+      const wallet = getProvider();
+      try {
+        if (wallet) {
+          await wallet.connect();
+          const { address, publicKey } = await wallet.account();
+          dispatch(setMartinKey(publicKey));
+          dispatch(setMartinAddress(address));
+          collapseConnectedModal();
+          successMessageNotify("Martin Wallet connected!");
+        } else {
+          Notify("error", "Connection failed!");
+        }
+      } catch (error) {
+        // { code: 4001, message: "User rejected the request."}
+      }
+    } else if (walletName === NIGHTLT_WALLET_KEY) {
+      // Nightly wallet
+      dispatch(setNightlyActive());
+      collapseConnectedModal();
+    } else {
+      collapseConnectedModal();
     }
   };
 
@@ -447,6 +484,24 @@ const Nav = (props) => {
         return cond(
           walletState.active.includes(XVERSE_WALLET_KEY) ||
             walletState.active.includes(UNISAT_WALLET_KEY)
+        );
+      }
+      case PETRA_WALLET_KEY: {
+        return cond(
+          walletState.active.includes(MARTIN_WALLET_KEY) ||
+            walletState.active.includes(NIGHTLT_WALLET_KEY)
+        );
+      }
+      case MARTIN_WALLET_KEY: {
+        return cond(
+          walletState.active.includes(PETRA_WALLET_KEY) ||
+            walletState.active.includes(NIGHTLT_WALLET_KEY)
+        );
+      }
+      case NIGHTLT_WALLET_KEY: {
+        return cond(
+          walletState.active.includes(PETRA_WALLET_KEY) ||
+            walletState.active.includes(MARTIN_WALLET_KEY)
         );
       }
       default:
@@ -498,6 +553,45 @@ const Nav = (props) => {
       window.removeEventListener("resize", getScreenDimensions);
     };
   });
+
+  const init = async () => {
+    const adapter = await getAdapter();
+    try {
+      const response = await adapter.connect();
+      if (response.status === "APPROVED") {
+        dispatch(setNightlyAddress(response.args));
+      }
+    } catch (error) {
+      await adapter.disconnect().catch(() => {});
+      console.log(error);
+    }
+    return adapter;
+  };
+
+  useEffect(() => {
+    (async () => {
+      if (walletState.active.includes(NIGHTLT_WALLET_KEY)) {
+        const adapter = await init();
+        // Events
+        adapter.on("connect", (accInfo) => {
+          console.log("connect", accInfo);
+          dispatch(setNightlyAddress(accInfo.address));
+          dispatch(setNightlyKey(accInfo.publicKey));
+        });
+
+        adapter.on("disconnect", () => {
+          dispatch(clearWalletState(NIGHTLT_WALLET_KEY));
+          console.log("adapter disconnected");
+        });
+
+        adapter.on("accountChange", (accInfo) => {
+          dispatch(setNightlyAddress(accInfo.address));
+          dispatch(setNightlyKey(accInfo.publicKey));
+        });
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch, walletState.active]);
 
   const onClick = (e) => {
     setCurrent(e.key);
@@ -623,6 +717,8 @@ const Nav = (props) => {
           : magicEdenAddress
           ? magicEdenAddress
           : petraAddress
+          ? petraAddress
+          : martinAddress
       }`}
       width={width}
       className="avatar"
@@ -668,102 +764,6 @@ const Nav = (props) => {
                 </div>
               </div>
             </Col>
-            {/* {screenDimensions.width >= 1200 && (
-              <>
-                <Flex gap={10}>
-                  <Text
-                    className={`${
-                      location.pathname === "/"
-                        ? "headertitle headerStyle"
-                        : "font-style headerCompanyName"
-                    } pointer heading-one `}
-                    onClick={() => {
-                      navigate("/");
-                      dispatch(setLendHeader(false));
-                    }}
-                    ref={ref1}
-                  >
-                    Browse
-                  </Text>
-                  <Text className="font-xsmall color-grey">|</Text>
-                  <Text
-                    className={`${
-                      location.pathname === "/lending"
-                        ? "headertitle headerStyle"
-                        : "font-style headerCompanyName"
-                    } pointer heading-one `}
-                    onClick={() => {
-                      navigate("/lending");
-                      dispatch(setLendHeader(false));
-                    }}
-                    ref={ref2}
-                  >
-                    Lending
-                  </Text>
-                  <Text className="font-xsmall color-grey">|</Text>
-
-                  <Text
-                    className={`${
-                      location.pathname === "/dashboard"
-                        ? "headertitle headerStyle"
-                        : "font-style headerCompanyName"
-                    } pointer heading-one `}
-                    onClick={() => {
-                      navigate("/dashboard");
-                      dispatch(setLendHeader(false));
-                    }}
-                    ref={ref3}
-                  >
-                    Dashboard
-                  </Text>
-                  <Text className="font-xsmall color-grey">|</Text>
-                  <Text
-                    className={`${
-                      location.pathname.includes("staking")
-                        ? "headertitle headerStyle"
-                        : "font-style headerCompanyName"
-                    } pointer heading-one  `}
-                    onClick={() => {
-                      navigate("/staking");
-                      dispatch(setLendHeader(false));
-                    }}
-                    ref={ref4}
-                  >
-                    Staking
-                  </Text>
-                  <Text className="font-xsmall color-grey">|</Text>
-                  <Text
-                    className={`${
-                      location.pathname.includes("airdrops")
-                        ? "headertitle headerStyle"
-                        : "font-style headerCompanyName"
-                    } pointer heading-one  `}
-                    onClick={() => {
-                      navigate("/airdrops");
-                      dispatch(setLendHeader(false));
-                    }}
-                    ref={ref4}
-                  >
-                    Airdrops
-                  </Text>
-                  <Text className="font-xsmall color-grey">|</Text>
-                  <Text
-                    className={`${
-                      location.pathname.includes("portfolio")
-                        ? "headertitle headerStyle"
-                        : "font-style headerCompanyName"
-                    } pointer heading-one  `}
-                    onClick={() => {
-                      navigate("/portfolio");
-                      dispatch(setLendHeader(false));
-                    }}
-                    ref={ref5}
-                  >
-                    Portfolio
-                  </Text>
-                </Flex>
-              </>
-            )} */}
           </Row>
         </Col>
 
@@ -819,21 +819,6 @@ const Nav = (props) => {
                 <Text className="font-xsmall color-grey">|</Text>
                 <Text
                   className={`${
-                    location.pathname.includes("staking")
-                      ? "headertitle headerStyle"
-                      : "font-style headerCompanyName"
-                  } pointer heading-one  `}
-                  onClick={() => {
-                    navigate("/staking");
-                    dispatch(setLendHeader(false));
-                  }}
-                  ref={ref4}
-                >
-                  Staking
-                </Text>
-                <Text className="font-xsmall color-grey">|</Text>
-                <Text
-                  className={`${
                     location.pathname.includes("faucet")
                       ? "headertitle headerStyle"
                       : "font-style headerCompanyName"
@@ -872,7 +857,8 @@ const Nav = (props) => {
             xverseAddress ||
             unisatAddress ||
             magicEdenAddress ||
-            petraAddress ? (
+            petraAddress ||
+            martinAddress ? (
               <Col>
                 <Flex
                   gap={5}
@@ -893,8 +879,10 @@ const Nav = (props) => {
                           <>{sliceAddress(plugAddress, 5)}</>
                         ) : magicEdenAddress ? (
                           <>{sliceAddress(magicEdenAddress, 5)}</>
-                        ) : (
+                        ) : petraAddress ? (
                           <>{sliceAddress(petraAddress, 5)}</>
+                        ) : (
+                          <>{sliceAddress(martinAddress, 5)}</>
                         )}
                       </Text>
                       <FaAngleDown color="white" size={20} />
@@ -1003,14 +991,14 @@ const Nav = (props) => {
                     label: (
                       <Row align={"middle"}>
                         <img
-                          src={dfinity_backed}
-                          style={{ paddingRight: "10px" }}
+                          src={Aptos}
                           alt="noimage"
-                          width="25px"
+                          style={{ paddingRight: "10px" }}
+                          width="20px"
                         />
                         <Text className="font-weight-600 letter-spacing-medium text-color-one font-large">
                           {" "}
-                          ICP
+                          APTOS
                         </Text>
                       </Row>
                     ),
@@ -1019,7 +1007,10 @@ const Nav = (props) => {
                         {allWallets.map((wallet, index) => {
                           return (
                             <Row key={`index-${wallet.key}`}>
-                              {wallet.key === PLUG_WALLET_KEY ? (
+                              {wallet.key === PETRA_WALLET_KEY ||
+                              wallet.key === MARTIN_WALLET_KEY ||
+                              wallet.key === NIGHTLT_WALLET_KEY ||
+                              wallet.key === OKX_WALLET_KEY ? (
                                 <>{walletCards(wallet, index)}</>
                               ) : null}
                             </Row>
@@ -1050,37 +1041,10 @@ const Nav = (props) => {
                           return (
                             <Row key={`index-${wallet.key}`}>
                               {wallet.key !== PLUG_WALLET_KEY &&
-                              wallet.key !== PETRA_WALLET_KEY ? (
-                                <>{walletCards(wallet, index)}</>
-                              ) : null}
-                            </Row>
-                          );
-                        })}
-                      </>
-                    ),
-                  },
-                  {
-                    key: "3",
-                    label: (
-                      <Row align={"middle"}>
-                        <img
-                          src={Aptos}
-                          alt="noimage"
-                          style={{ paddingRight: "10px" }}
-                          width="20px"
-                        />
-                        <Text className="font-weight-600 letter-spacing-medium text-color-one font-large">
-                          {" "}
-                          APTOS
-                        </Text>
-                      </Row>
-                    ),
-                    children: (
-                      <>
-                        {allWallets.map((wallet, index) => {
-                          return (
-                            <Row key={`index-${wallet.key}`}>
-                              {wallet.key === PETRA_WALLET_KEY ? (
+                              wallet.key !== PETRA_WALLET_KEY &&
+                              wallet.key !== MARTIN_WALLET_KEY &&
+                              wallet.key !== NIGHTLT_WALLET_KEY &&
+                              wallet.key !== OKX_WALLET_KEY ? (
                                 <>{walletCards(wallet, index)}</>
                               ) : null}
                             </Row>
@@ -1114,8 +1078,10 @@ const Nav = (props) => {
                     <>{sliceAddress(magicEdenAddress, 5)}</>
                   ) : plugAddress ? (
                     <>{sliceAddress(plugAddress, 5)}</>
-                  ) : (
+                  ) : petraAddress ? (
                     <>{sliceAddress(petraAddress, 5)}</>
+                  ) : (
+                    <>{sliceAddress(martinAddress, 5)}</>
                   )}
                 </Text>
               </Flex>
@@ -1147,9 +1113,12 @@ const Nav = (props) => {
                       dispatch(clearWalletState(PLUG_WALLET_KEY));
                     } else if (wallet === MAGICEDEN_WALLET_KEY) {
                       dispatch(clearWalletState(MAGICEDEN_WALLET_KEY));
-                    } else {
+                    } else if (wallet === PETRA_WALLET_KEY) {
                       dispatch(clearWalletState(PETRA_WALLET_KEY));
                       window.aptos.disconnect();
+                    } else {
+                      dispatch(clearWalletState(MARTIN_WALLET_KEY));
+                      window.martian.disconnect();
                     }
                   });
                   onClose();
@@ -1174,21 +1143,24 @@ const Nav = (props) => {
             <Col>
               <Flex align="center">
                 <img
-                  src={Bitcoin}
-                  alt="bitcoin"
+                  src={Aptos}
+                  alt="aptos"
                   style={{ marginRight: "10px" }}
-                  width={27}
+                  width={25}
                 />
                 <Flex vertical>
                   <Text className="text-color-two font-medium">Payments</Text>
                   <Text className="text-color-one font-xsmall">
-                    {plugAddress ? (
+                    {petraAddress ? (
                       <>
-                        {sliceAddress(plugAddress, 9)}{" "}
-                        {addressRendererWithCopy(plugAddress)}
+                        {sliceAddress(petraAddress, 9)}{" "}
+                        {addressRendererWithCopy(petraAddress)}
                       </>
                     ) : (
-                      "---"
+                      <>
+                        {sliceAddress(martinAddress, 9)}{" "}
+                        {addressRendererWithCopy(martinAddress)}
+                      </>
                     )}
                   </Text>
                 </Flex>
@@ -1196,7 +1168,8 @@ const Nav = (props) => {
             </Col>
 
             <Col>
-              {walletState.active.includes(PLUG_WALLET_KEY) ? null : (
+              {walletState.active.includes(PETRA_WALLET_KEY) ||
+              walletState.active.includes(MARTIN_WALLET_KEY) ? null : (
                 <CustomButton
                   className="font-size-18 black-bg text-color-one border-none"
                   title={"Connect"}
@@ -1239,11 +1212,6 @@ const Nav = (props) => {
                         {sliceAddress(magicEdenAddress, 9)}{" "}
                         {addressRendererWithCopy(magicEdenAddress)}
                       </>
-                    ) : petraAddress ? (
-                      <>
-                        {sliceAddress(petraAddress, 9)}{" "}
-                        {addressRendererWithCopy(petraAddress)}
-                      </>
                     ) : (
                       "---"
                     )}
@@ -1255,8 +1223,7 @@ const Nav = (props) => {
             <Col>
               {walletState.active.includes(XVERSE_WALLET_KEY) ||
               walletState.active.includes(UNISAT_WALLET_KEY) ||
-              walletState.active.includes(MAGICEDEN_WALLET_KEY) ||
-              walletState.active.includes(PETRA_WALLET_KEY) ? null : (
+              walletState.active.includes(MAGICEDEN_WALLET_KEY) ? null : (
                 <CustomButton
                   className="font-size-18 black-bg text-color-one border-none"
                   title={"Connect"}
