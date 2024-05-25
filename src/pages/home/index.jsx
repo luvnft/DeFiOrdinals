@@ -79,7 +79,7 @@ const Home = (props) => {
         </Col>
       </Row>
 
-      <Row justify={"start"} gutter={32}>
+      <Row justify={"start"} className="pad-bottom-30" gutter={32}>
         {collections?.map((collection, index) => {
           const name = collection?.data?.name;
           const nameSplitted = collection?.data?.name?.split(" ");
@@ -193,7 +193,7 @@ const Home = (props) => {
         })}
       </Row>
 
-      <Row>
+      {/* <Row>
         <Col>
           <h1
             style={{ margin: breakpoints.md && "10px 0" }}
@@ -409,7 +409,7 @@ const Home = (props) => {
             </Space>
           </CardDisplay>
         </Col>
-      </Row>
+      </Row> */}
     </React.Fragment>
   );
 };

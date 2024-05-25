@@ -48,14 +48,11 @@ import {
   setNightlyKey,
   setPetraAddress,
   setPetraKey,
-  setPlugKey,
-  setPlugPrincipalId,
   setUnisatCredentials,
   setXverseBtc,
   setXverseOrdinals,
   setXversePayment,
 } from "../../redux/slice/wallet";
-// import { AptosFaucetClient } from "@aptos-labs/aptos-faucet-client";
 import { getAdapter } from "../../utils/adapter";
 import {
   API_METHODS,
@@ -68,11 +65,10 @@ import {
   PLUG_WALLET_KEY,
   UNISAT_WALLET_KEY,
   XVERSE_WALLET_KEY,
-  allWallets,
+  BTCWallets,
+  paymentWallets,
   apiUrl,
-  host,
   sliceAddress,
-  whitelist,
 } from "../../utils/common";
 import { propsContainer } from "../props-container";
 
@@ -88,7 +84,6 @@ const Nav = (props) => {
   const walletState = reduxState.wallet;
   const constantState = reduxState.constant;
 
-  const plugAddress = walletState.plug.principalId;
   const petraAddress = walletState.petra.address;
   const martinAddress = walletState.martin.address;
   const xverseAddress = walletState.xverse.ordinals.address;
@@ -318,34 +313,6 @@ const Nav = (props) => {
       } else {
         errorMessageNotify("No unisat wallet installed!");
       }
-    } else if (walletName === PLUG_WALLET_KEY) {
-      // PLUG
-      if (window?.ic?.plug) {
-        // Callback to print sessionData
-        const onConnectionUpdate = () => {
-          const { principalId } = window.ic.plug.sessionManager.sessionData;
-          dispatch(setPlugPrincipalId(principalId));
-          Notify();
-        };
-
-        try {
-          const publicKey = await window.ic.plug.requestConnect({
-            whitelist,
-            host,
-            onConnectionUpdate,
-            timeout: 50000,
-          });
-          const pId = await window.ic.plug.principalId;
-          dispatch(setPlugKey(publicKey));
-          dispatch(setPlugPrincipalId(pId));
-          collapseConnectedModal();
-          successMessageNotify("Plug Wallet connected!");
-        } catch (error) {
-          errorMessageNotify(error.message);
-        }
-      } else {
-        errorMessageNotify("No plug wallet installed!");
-      }
     } else if (walletName === UNISAT_WALLET_KEY) {
       try {
         const provider = wallets.find(isSatsConnectCompatibleWallet);
@@ -489,18 +456,28 @@ const Nav = (props) => {
       case PETRA_WALLET_KEY: {
         return cond(
           walletState.active.includes(MARTIN_WALLET_KEY) ||
+            walletState.active.includes(OKX_WALLET_KEY) ||
             walletState.active.includes(NIGHTLT_WALLET_KEY)
         );
       }
       case MARTIN_WALLET_KEY: {
         return cond(
           walletState.active.includes(PETRA_WALLET_KEY) ||
+            walletState.active.includes(OKX_WALLET_KEY) ||
             walletState.active.includes(NIGHTLT_WALLET_KEY)
         );
       }
       case NIGHTLT_WALLET_KEY: {
         return cond(
           walletState.active.includes(PETRA_WALLET_KEY) ||
+            walletState.active.includes(OKX_WALLET_KEY) ||
+            walletState.active.includes(MARTIN_WALLET_KEY)
+        );
+      }
+      case OKX_WALLET_KEY: {
+        return cond(
+          walletState.active.includes(PETRA_WALLET_KEY) ||
+            walletState.active.includes(NIGHTLT_WALLET_KEY) ||
             walletState.active.includes(MARTIN_WALLET_KEY)
         );
       }
@@ -624,11 +601,11 @@ const Nav = (props) => {
       <Row
         className="font-style "
         onClick={() => {
-          navigate("/dashboard");
+          navigate("/myassets");
           setOpen(false);
         }}
       >
-        Dashboard
+        My Assets
       </Row>
     ),
     getItem(
@@ -708,9 +685,7 @@ const Nav = (props) => {
   const avatarRenderer = (width) => (
     <img
       src={`${avatar}/svg?seed=${
-        plugAddress
-          ? plugAddress
-          : xverseAddress
+        xverseAddress
           ? xverseAddress
           : unisatAddress
           ? unisatAddress
@@ -804,17 +779,17 @@ const Nav = (props) => {
 
                 <Text
                   className={`${
-                    location.pathname === "/dashboard"
+                    location.pathname === "/myassets"
                       ? "headertitle headerStyle"
                       : "font-style headerCompanyName"
                   } pointer heading-one `}
                   onClick={() => {
-                    navigate("/dashboard");
+                    navigate("/myassets");
                     dispatch(setLendHeader(false));
                   }}
                   ref={ref3}
                 >
-                  Dashboard
+                  My Assets
                 </Text>
                 <Text className="font-xsmall color-grey">|</Text>
                 <Text
@@ -853,8 +828,7 @@ const Nav = (props) => {
 
         <Col>
           <Flex gap={10} justify="end" align={"center"} ref={ref4}>
-            {plugAddress ||
-            xverseAddress ||
+            {xverseAddress ||
             unisatAddress ||
             magicEdenAddress ||
             petraAddress ||
@@ -875,8 +849,6 @@ const Nav = (props) => {
                           <>{sliceAddress(xverseAddress, 5)}</>
                         ) : unisatAddress ? (
                           <>{sliceAddress(unisatAddress, 5)}</>
-                        ) : plugAddress ? (
-                          <>{sliceAddress(plugAddress, 5)}</>
                         ) : magicEdenAddress ? (
                           <>{sliceAddress(magicEdenAddress, 5)}</>
                         ) : petraAddress ? (
@@ -972,17 +944,13 @@ const Nav = (props) => {
           </Row>
 
           <Row justify={"start"} align={"middle"}>
-            <Text
-              className={`${
-                breakPoint.xs ? "font-medium" : "font-small"
-              } text-color-two biticon mt-30`}
-            >
+            <Text className={`font-small text-color-two biticon mt-15`}>
               Choose how you want to connect. If you don't have a wallet, you
               can select a provider and create one.
             </Text>
           </Row>
 
-          <Row className="m-top-bottom">
+          <Row className="">
             <Col>
               <Tabs
                 items={[
@@ -1004,15 +972,10 @@ const Nav = (props) => {
                     ),
                     children: (
                       <>
-                        {allWallets.map((wallet, index) => {
+                        {paymentWallets.map((wallet, index) => {
                           return (
                             <Row key={`index-${wallet.key}`}>
-                              {wallet.key === PETRA_WALLET_KEY ||
-                              wallet.key === MARTIN_WALLET_KEY ||
-                              wallet.key === NIGHTLT_WALLET_KEY ||
-                              wallet.key === OKX_WALLET_KEY ? (
-                                <>{walletCards(wallet, index)}</>
-                              ) : null}
+                              {walletCards(wallet, index)}
                             </Row>
                           );
                         })}
@@ -1037,16 +1000,10 @@ const Nav = (props) => {
                     ),
                     children: (
                       <>
-                        {allWallets.map((wallet, index) => {
+                        {BTCWallets.map((wallet, index) => {
                           return (
                             <Row key={`index-${wallet.key}`}>
-                              {wallet.key !== PLUG_WALLET_KEY &&
-                              wallet.key !== PETRA_WALLET_KEY &&
-                              wallet.key !== MARTIN_WALLET_KEY &&
-                              wallet.key !== NIGHTLT_WALLET_KEY &&
-                              wallet.key !== OKX_WALLET_KEY ? (
-                                <>{walletCards(wallet, index)}</>
-                              ) : null}
+                              {walletCards(wallet, index)}
                             </Row>
                           );
                         })}
@@ -1076,8 +1033,6 @@ const Nav = (props) => {
                     <>{sliceAddress(unisatAddress, 5)}</>
                   ) : magicEdenAddress ? (
                     <>{sliceAddress(magicEdenAddress, 5)}</>
-                  ) : plugAddress ? (
-                    <>{sliceAddress(plugAddress, 5)}</>
                   ) : petraAddress ? (
                     <>{sliceAddress(petraAddress, 5)}</>
                   ) : (
@@ -1156,11 +1111,13 @@ const Nav = (props) => {
                         {sliceAddress(petraAddress, 9)}{" "}
                         {addressRendererWithCopy(petraAddress)}
                       </>
-                    ) : (
+                    ) : martinAddress ? (
                       <>
                         {sliceAddress(martinAddress, 9)}{" "}
                         {addressRendererWithCopy(martinAddress)}
                       </>
+                    ) : (
+                      "---"
                     )}
                   </Text>
                 </Flex>
@@ -1260,6 +1217,10 @@ const Nav = (props) => {
                       dispatch(clearWalletState(UNISAT_WALLET_KEY));
                     } else if (wallet === PLUG_WALLET_KEY) {
                       dispatch(clearWalletState(PLUG_WALLET_KEY));
+                    } else if (wallet === PETRA_WALLET_KEY) {
+                      dispatch(clearWalletState(PETRA_WALLET_KEY));
+                    } else if (wallet === MARTIN_WALLET_KEY) {
+                      dispatch(clearWalletState(MARTIN_WALLET_KEY));
                     } else {
                       dispatch(clearWalletState(MAGICEDEN_WALLET_KEY));
                     }

@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { MAGICEDEN_WALLET_KEY, MARTIN_WALLET_KEY, NIGHTLT_WALLET_KEY, PETRA_WALLET_KEY, PLUG_WALLET_KEY, UNISAT_WALLET_KEY, XVERSE_WALLET_KEY } from "../../utils/common";
+import { MAGICEDEN_WALLET_KEY, MARTIN_WALLET_KEY, NIGHTLT_WALLET_KEY, PETRA_WALLET_KEY, UNISAT_WALLET_KEY, XVERSE_WALLET_KEY } from "../../utils/common";
 
 const state = {
   xverse: {
@@ -19,10 +19,6 @@ const state = {
     publicKey: null,
     signature: null,
     btcBalance: 0.0,
-  },
-  plug: {
-    key: {},
-    principalId: null,
   },
   petra: {
     publicKey: null,
@@ -74,14 +70,9 @@ const walletSlice = createSlice({
       state.active.push(UNISAT_WALLET_KEY);
     },
 
-    setPlugKey: (state, action) => {
-      state.plug.key = action.payload;
-    },
-
     setPetraKey: (state, action) => {
       state.petra.publicKey = action.payload;
     },
-
 
     setPetraAddress: (state, action) => {
       state.petra.address = action.payload;
@@ -112,12 +103,6 @@ const walletSlice = createSlice({
       state.nightly.publicKey = action.payload;
     },
 
-    setPlugPrincipalId: (state, action) => {
-      state.plug.principalId = action.payload;
-      if (action.payload && !state.active.includes(PLUG_WALLET_KEY))
-        state.active.push(PLUG_WALLET_KEY);
-    },
-
     clearWalletState: (state, action) => {
       if (action.payload === XVERSE_WALLET_KEY) {
         state.xverse = {
@@ -132,11 +117,6 @@ const walletSlice = createSlice({
           publicKey: null,
           btcBalance: 0.0,
         };
-      } else if (action.payload === PLUG_WALLET_KEY) {
-        state.plug = {
-          key: {},
-          principalId: null,
-        };
       } else if (action.payload === MAGICEDEN_WALLET_KEY) {
         state.magicEden = {
           ordinals: {},
@@ -149,7 +129,7 @@ const walletSlice = createSlice({
           publicKey: null,
           address: null
         }
-      } else {
+      } else if (action.payload === MARTIN_WALLET_KEY) {
         state.martin = {
           publicKey: null,
           address: null
@@ -161,7 +141,6 @@ const walletSlice = createSlice({
 });
 
 export const {
-  setPlugKey,
   setPetraKey,
   setXverseBtc,
   setMartinKey,
@@ -173,7 +152,6 @@ export const {
   setXverseOrdinals,
   setNightlyActive,
   setNightlyAddress,
-  setPlugPrincipalId,
   setXverseSignature,
   setUnisatCredentials,
   setMagicEdenCredentials,

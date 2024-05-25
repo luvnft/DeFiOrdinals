@@ -3,56 +3,37 @@ import {
   Collapse,
   Divider,
   Flex,
-  Grid,
   Input,
   Row,
   Slider,
   Tooltip,
   Typography,
 } from "antd";
-import React, { useEffect, useState } from "react";
-import { Bars } from "react-loading-icons";
-import Aptos from "../../assets/wallet-logo/aptos_logo.png";
-import ckBtc from "../../assets/coin_logo/ckbtc.png";
-import TableComponent from "../../component/table";
-import { propsContainer } from "../../container/props-container";
-import { TbInfoSquareRounded } from "react-icons/tb";
-import { API_METHODS, apiUrl } from "../../utils/common";
+import React, { useState } from "react";
 import { BiSolidOffer } from "react-icons/bi";
-import CustomButton from "../../component/Button";
-import ModalDisplay from "../../component/modal";
 import { FaCaretDown, FaWallet } from "react-icons/fa";
 import { GoAlertFill } from "react-icons/go";
 import { PiPlusSquareThin } from "react-icons/pi";
+import { TbInfoSquareRounded } from "react-icons/tb";
+import { Bars } from "react-loading-icons";
+import ckBtc from "../../assets/coin_logo/ckbtc.png";
+import Aptos from "../../assets/wallet-logo/aptos_logo.png";
+import CustomButton from "../../component/Button";
+import ModalDisplay from "../../component/modal";
+import TableComponent from "../../component/table";
+import { propsContainer } from "../../container/props-container";
 
 const Dashboard = (props) => {
   /* global BigInt */
-  const { api_agent, ckBtcAgent, ckBtcActorAgent } = props.wallet;
-  const { reduxState, dispatch, isPlugError } = props.redux;
+  const { reduxState, isPlugError } = props.redux;
   const approvedCollections = reduxState.constant.approvedCollections;
   const activeWallet = reduxState.wallet.active;
 
   const btcvalue = reduxState.constant.btcvalue;
-  const ethvalue = reduxState.constant.ethvalue;
   const aptosvalue = reduxState.constant.aptosvalue;
 
-  const walletState = reduxState.wallet;
-  let plugAddress = walletState.plug.principalId;
-
-  const xverseAddress = walletState.xverse.ordinals.address;
-  const unisatAddress = walletState.unisat.address;
-  const magicEdenAddress = walletState.magicEden.ordinals.address;
-
   const { Text } = Typography;
-  const { useBreakpoint } = Grid;
-  const breakpoints = useBreakpoint();
-
   // USE STATE
-
-  const [screenDimensions, setScreenDimensions] = React.useState({
-    width: window.screen.width,
-    height: window.screen.height,
-  });
   const [isLendModal, setIsLendModal] = useState(false);
   const [lendModalData, setLendModalData] = useState({});
   const [collapseActiveKey, setCollapseActiveKey] = useState(["2"]);

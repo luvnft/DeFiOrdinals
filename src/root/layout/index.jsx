@@ -127,7 +127,7 @@ const MainLayout = () => {
             {location.pathname === "/" ? (
               <>
                 <Footer className="main-bg-b-to-t" style={{ padding: "20px" }}>
-                  <Row justify={"center"}>
+                  {/* <Row justify={"center"}>
                     <Text className="text-color-one dash-headings letter-spacing-medium font-xxlarge font-weight-600">
                       How it works ?
                     </Text>
@@ -334,7 +334,7 @@ const MainLayout = () => {
                         </Col>
                       </Row>
                     </Col>
-                  </Row>
+                  </Row> */}
 
                   <Row justify={"center"} className="mt-30">
                     <Col xs={24} md={22}>
@@ -444,30 +444,30 @@ const MainLayout = () => {
                                     </Text>
                                     <Text
                                       onClick={() => {
-                                        navigate("/dashboard");
+                                        navigate("/myassets");
                                         window.scrollTo(0, 0);
                                       }}
                                       className="text-color-two headertitle title pointer font-small letter-spacing-small"
                                     >
-                                      Dashboard
+                                      My Assets
                                     </Text>
                                     <Text
                                       onClick={() => {
-                                        navigate("/staking");
+                                        navigate("/faucet");
                                         window.scrollTo(0, 0);
                                       }}
                                       className="text-color-two headertitle title pointer font-small letter-spacing-small"
                                     >
-                                      Staking
+                                      Faucet
                                     </Text>
                                     <Text
                                       onClick={() => {
-                                        navigate("/airdrops");
+                                        navigate("/portfolio");
                                         window.scrollTo(0, 0);
                                       }}
                                       className="text-color-two headertitle title pointer font-small letter-spacing-small"
                                     >
-                                      Airdrops
+                                      Portfolio
                                     </Text>
                                   </Flex>
                                 </Flex>

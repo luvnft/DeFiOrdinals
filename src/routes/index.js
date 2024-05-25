@@ -32,10 +32,15 @@ export const publicRoutes = [
     component: lazy(() => import("../pages/walletasset")),
   },
   {
-    name: "Dashboard",
-    path: `/dashboard`,
-    component: lazy(() => import("../pages/dashboard")),
+    name: "MyAssets",
+    path: `/myassets`,
+    component: lazy(() => import("../pages/my-assets")),
   },
+  // {
+  //   name: "Dashboard",
+  //   path: `/dashboard`,
+  //   component: lazy(() => import("../pages/dashboard")),
+  // },
   // {
   //   name: "Staking",
   //   path: `/staking`,

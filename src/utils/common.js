@@ -45,12 +45,7 @@ const hostLink = process.env.REACT_APP_HOST;
 export const whitelist = [ordinals, btc, eth, affiliates];
 export const host = hostLink;
 
-export const allWallets = [
-  {
-    label: "PLUG",
-    image: plug,
-    key: PLUG_WALLET_KEY,
-  },
+export const BTCWallets = [
   {
     label: "MAGICEDEN",
     image: magiceden,
@@ -65,7 +60,10 @@ export const allWallets = [
     label: "UNISAT",
     image: unisat,
     key: UNISAT_WALLET_KEY,
-  },
+  }
+];
+
+export const paymentWallets = [
   {
     label: "PETRA",
     image: petra,
@@ -86,7 +84,7 @@ export const allWallets = [
     image: okx,
     key: OKX_WALLET_KEY,
   },
-];
+]
 
 export const agentCreator = (apiFactory, canisterId) => {
   const agent = new HttpAgent({

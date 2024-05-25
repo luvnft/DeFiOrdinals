@@ -339,6 +339,10 @@ a {
   margin-right: 10px;
 }
 
+.border-radius-50 {
+  border-radius: 50%;
+}
+
 .card-box {
   border: 1px solid;
   border-color: #3e3e3e;
@@ -900,6 +904,10 @@ input::placeholder {
 .ant-modal .ant-modal-content {
   background-color: #0c0313 !important;
   box-shadow: 0 0 5px 0.5px #aabcd8, 0 0 5px 1px #dce1e833 !important;
+}
+
+.ant-modal {
+  top: 80px;
 }
 
 .ant-picker .ant-picker-suffix {

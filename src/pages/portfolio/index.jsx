@@ -4,7 +4,6 @@ import {
   Descriptions,
   Flex,
   Grid,
-  Popconfirm,
   Row,
   Tooltip,
   Typography,
@@ -15,8 +14,7 @@ import React, { useEffect, useState } from "react";
 import { FaRegSmileWink } from "react-icons/fa";
 import { FcInfo } from "react-icons/fc";
 import { ImSad } from "react-icons/im";
-import { MdOutlineCancel, MdTour } from "react-icons/md";
-import { RiCheckboxCircleFill } from "react-icons/ri";
+import { MdTour } from "react-icons/md";
 import { Bars } from "react-loading-icons";
 import CardDisplay from "../../component/card";
 import WalletUI from "../../component/download-wallets-UI";
@@ -27,12 +25,14 @@ import { propsContainer } from "../../container/props-container";
 import { setLoading } from "../../redux/slice/constant";
 import {
   API_METHODS,
+  BTCWallets,
   IS_USER,
   MAGICEDEN_WALLET_KEY,
-  PLUG_WALLET_KEY,
+  MARTIN_WALLET_KEY,
+  NIGHTLT_WALLET_KEY,
+  PETRA_WALLET_KEY,
   UNISAT_WALLET_KEY,
   XVERSE_WALLET_KEY,
-  allWallets,
   apiUrl,
 } from "../../utils/common";
 
@@ -40,7 +40,6 @@ const Portfolio = (props) => {
   const { api_agent } = props.wallet;
   const { reduxState, dispatch } = props.redux;
   const activeWallet = reduxState.wallet.active;
-  const principalId = reduxState.wallet.plug.principalId;
   const xverseWallet = reduxState.wallet.xverse;
   const unisatWallet = reduxState.wallet.unisat;
   const magicEdenWallet = reduxState.wallet.magicEden;
@@ -49,6 +48,8 @@ const Portfolio = (props) => {
   const unisatAddress = walletState.unisat.address;
   const magicEdenAddress = walletState.magicEden.ordinals.address;
   const petraAddress = walletState.petra.address;
+  const martinAddress = walletState.martin.address;
+  const nightltAddress = walletState.nightly.address;
 
   const { Text } = Typography;
   const { useBreakpoint } = Grid;
@@ -90,21 +91,6 @@ const Portfolio = (props) => {
       Notify("error", error.message);
     }
   };
-  useEffect(() => {
-    (async () => {
-      if (api_agent && activeWallet.includes(PLUG_WALLET_KEY)) {
-        try {
-          const getLoansReq = await api_agent.getLoanRequest(principalId);
-          setLendRequests(getLoansReq.flat());
-        } catch (error) {
-          Notify("error", error.message);
-        }
-      }
-    })();
-    if (!principalId) {
-      setLendRequests(null);
-    }
-  }, [activeWallet, activeWallet.length, api_agent, principalId]);
 
   useEffect(() => {
     (async () => {
@@ -237,13 +223,17 @@ const Portfolio = (props) => {
           <Row justify={"center"}>
             <Col className="m-bottom">
               {wallet === XVERSE_WALLET_KEY ? (
-                <>{renderWalletAddress(xverseWallet.ordinals?.address)}</>
+                <>{renderWalletAddress(xverseAddress)}</>
               ) : wallet === UNISAT_WALLET_KEY ? (
-                <>{renderWalletAddress(unisatWallet?.address)}</>
+                <>{renderWalletAddress(unisatAddress)}</>
               ) : wallet === MAGICEDEN_WALLET_KEY ? (
-                <>{renderWalletAddress(magicEdenWallet.ordinals?.address)}</>
-              ) : wallet === PLUG_WALLET_KEY ? (
-                <>{renderWalletAddress(principalId)}</>
+                <>{renderWalletAddress(magicEdenAddress)}</>
+              ) : wallet === PETRA_WALLET_KEY ? (
+                <>{renderWalletAddress(petraAddress)}</>
+              ) : wallet === MARTIN_WALLET_KEY ? (
+                <>{renderWalletAddress(martinAddress)}</>
+              ) : wallet === NIGHTLT_WALLET_KEY ? (
+                <>{renderWalletAddress(nightltAddress)}</>
               ) : (
                 <>{renderWalletAddress(petraAddress)}</>
               )}
@@ -306,7 +296,7 @@ const Portfolio = (props) => {
 
       {activeWallet.length ? (
         <Row className="m-top-bottom" gutter={48}>
-          {allWallets.map((wallet, index) => {
+          {activeWallet.map((wallet, index) => {
             return (
               <Col
                 xl={8}
@@ -326,7 +316,7 @@ const Portfolio = (props) => {
                     letterSpacing: "2px",
                     fontWeight: "bold",
                   }}
-                  items={walletItems(wallet.key)}
+                  items={walletItems(wallet)}
                 />
               </Col>
             );
@@ -362,7 +352,7 @@ const Portfolio = (props) => {
         </Row>
       )}
 
-      <Row align={"middle"}>
+      {/* <Row align={"middle"}>
         <Col>
           <Flex align="center" gap={10}>
             <Title level={2} className="gradient-text-one">
@@ -381,201 +371,6 @@ const Portfolio = (props) => {
           </Flex>
         </Col>
       </Row>
-
-      {lendRequests === null ? (
-        <Row justify={"center"}>
-          <Flex justify="center" className="iconalignment">
-            <FaRegSmileWink className="text-color-one" size={25} />
-            <Text className="text-color-one font-large value-one letter-spacing-medium">
-              Connect Plug Wallet!
-            </Text>
-          </Flex>
-        </Row>
-      ) : (
-        <Row
-          justify={{
-            md: !lendRequests
-              ? "center"
-              : lendRequests.length === 0
-              ? "center"
-              : "start",
-            sm: "center",
-          }}
-          gutter={18}
-        >
-          {principalId && lendRequests?.length !== 0 ? (
-            lendRequests.map((card, index) => {
-              if (!imageUrl[index]) {
-                (async () => {
-                  const apiData = await API_METHODS.get(
-                    `${apiUrl.Api_base_url}/${card.inscriptionid}`
-                  );
-                  setImageUrl((existing) => {
-                    return {
-                      ...existing,
-                      [index]: `${process.env.REACT_APP_ORDINALS_CONTENT_API}/content/${apiData.data.id}`,
-                    };
-                  });
-
-                  setImageType((existing) => {
-                    return {
-                      ...existing,
-                      [index]: apiData.data.mime_type,
-                    };
-                  });
-                })();
-              }
-
-              return (
-                <>
-                  <Col
-                    key={`${card.name}-${card.inscriptionid}`}
-                    xs={24}
-                    sm={12}
-                    md={12}
-                    lg={8}
-                    xl={6}
-                  >
-                    <CardDisplay
-                      onMouseEnter={() => {
-                        setIcon(
-                          `${card.name}-${card.inscriptionid}-${card.amount}-${card.lender_profit}-${card.repayment_amount}`
-                        );
-                      }}
-                      onMouseLeave={() => {
-                        if (!isPopupOpen) setIcon(null);
-                      }}
-                      cover={
-                        imageType[index] === "text/html" ? (
-                          <iframe
-                            title="lend_image"
-                            height={300}
-                            src={imageUrl[index]}
-                          />
-                        ) : (
-                          <img
-                            src={imageUrl[index]}
-                            alt={`${card}`}
-                            width={250}
-                            height={300}
-                          />
-                        )
-                      }
-                      hoverable={true}
-                      bordered={false}
-                      className={
-                        "card-bg dashboard-card-padding ant-card-delete-icon m-top-bottom cardrelative"
-                      }
-                    >
-                      <Col className="cardabsolute absoluteTop absoluteleft gradient-bg">
-                        <Text className="heading-one font-small text-color-one iconalignment">
-                          {card.name} <RiCheckboxCircleFill color="blue" />
-                        </Text>
-                      </Col>
-                      <Col className="cardabsolute absolutetop-icon absoluteleft-icon z-index">
-                        {isIcon ===
-                        `${card.name}-${card.inscriptionid}-${card.amount}-${card.lender_profit}-${card.repayment_amount}` ? (
-                          <Tooltip
-                            title="cancel request"
-                            open={!isPopupOpen && isDeleteIcon}
-                          >
-                            <Popconfirm
-                              onOpenChange={(e) => {
-                                setPopupOpen(e);
-                                if (!e) setIcon(null);
-                              }}
-                              className="z-index"
-                              color="black"
-                              placement="top"
-                              style={{ color: "white" }}
-                              title={
-                                <span className="font-small heading-one text-color-two">
-                                  Are you sure want to delete ?
-                                </span>
-                              }
-                              okText="Yes"
-                              cancelText="No"
-                              onConfirm={() => {
-                                deleteLoanRequest(card.inscriptionid);
-                              }}
-                            >
-                              <MdOutlineCancel
-                                color="red"
-                                onMouseEnter={() => setDeleteIcon(true)}
-                                onMouseLeave={() => setDeleteIcon(false)}
-                                size={35}
-                              />
-                            </Popconfirm>
-                          </Tooltip>
-                        ) : null}
-                      </Col>
-
-                      <Row justify={"center"}>
-                        <Text className="heading-one font-large text-color-one">
-                          {card.name}
-                        </Text>
-                      </Row>
-                      <Row justify={"space-between"}>
-                        <Col>
-                          <Text className="heading-one font-large text-color-two">
-                            ID
-                          </Text>
-                        </Col>
-                        <Col>
-                          <Text className="text-color-one font-large value-one">
-                            {card.inscriptionid}
-                          </Text>
-                        </Col>
-                      </Row>
-
-                      <Row justify={"space-between"}>
-                        <Col>
-                          <Text className="heading-one font-large text-color-two">
-                            Amount
-                          </Text>
-                        </Col>
-                        <Col>
-                          <Text className="text-color-one font-large value-one">
-                            {card.loan_amount}
-                          </Text>
-                        </Col>
-                      </Row>
-
-                      <Row justify={"space-between"}>
-                        <Col>
-                          <Text className="heading-one font-large text-color-two">
-                            APR
-                          </Text>
-                        </Col>
-                        <Col>
-                          <Text className="text-color-one font-large value-one">
-                            {Number(card.apr)}
-                          </Text>
-                        </Col>
-                      </Row>
-                    </CardDisplay>
-                  </Col>
-                </>
-              );
-            })
-          ) : (
-            <Col>
-              <Row justify={"center"}>
-                <MdOutlineCancel color="#6a85f1" size={50} />
-              </Row>
-              <Row justify={"center"}>
-                <Text
-                  className={`${
-                    breakPoint.xs ? "font-medium" : "font-large"
-                  } text-color-one value-one letter-spacing-medium`}
-                >
-                  No Loan Requests Available
-                </Text>
-              </Row>
-            </Col>
-          )}
-        </Row>
-      )}
 
       <Col>
         <Flex align="center" gap={10}>
@@ -676,7 +471,7 @@ const Portfolio = (props) => {
             );
           })
         )}
-      </Row>
+      </Row> */}
       <ModalDisplay
         open={enableTour}
         onOK={handleTour}
