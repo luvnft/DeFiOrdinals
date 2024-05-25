@@ -52,7 +52,6 @@ const MyAssets = (props) => {
   const martinAddress = walletState.martin.address;
   const nightlyAddress = walletState.nightly.address;
   const paymentAddress = martinAddress ? martinAddress : nightlyAddress;
-  console.log("paymentAddress", paymentAddress);
 
   const { Text } = Typography;
 

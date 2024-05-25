@@ -30,13 +30,9 @@ const Faucet = (props) => {
 
   const config = new AptosConfig({ network: APTOS_NETWORK });
   const aptos = new Aptos(config);
-  console.log("aptos", aptos);
 
   const alice = Account.generate();
   const bob = Account.generate();
-
-  console.log("alice", alice);
-  console.log("bob", bob);
 
   const balance = async (sdk, name, address) => {
     let balance = await sdk.getAccountResource({

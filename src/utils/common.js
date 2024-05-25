@@ -29,11 +29,11 @@ export const XVERSE_WALLET_KEY = "xverse";
 export const UNISAT_WALLET_KEY = "unisat";
 export const PETRA_WALLET_KEY = "petra";
 export const MARTIN_WALLET_KEY = "martin";
-export const NIGHTLT_WALLET_KEY = "nightly";
+export const NIGHTLY_WALLET_KEY = "nightly";
 export const OKX_WALLET_KEY = "okx";
 export const MAGICEDEN_WALLET_KEY = "magiceden";
 export const APTOS_BRAND_KEY = "aptos";
-export const IS_USER = false;
+export const IS_USER = true;
 export const IS_DEV = true;
 
 export const ordinals = process.env.REACT_APP_ORDINAL_CANISTER_ID;
@@ -77,7 +77,7 @@ export const paymentWallets = [
   {
     label: "NIGHTLY",
     image: nightly,
-    key: NIGHTLT_WALLET_KEY,
+    key: NIGHTLY_WALLET_KEY,
   },
   {
     label: "OKX",

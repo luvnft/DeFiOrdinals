@@ -33,17 +33,12 @@ import CardDisplay from "../../component/card";
 import Loading from "../../component/loading-wrapper/secondary-loader";
 import ModalDisplay from "../../component/modal";
 import Notify from "../../component/notification";
-import {
-  setAirPoints,
-  setLendHeader,
-  setLoading,
-} from "../../redux/slice/constant";
+import { setLendHeader, setLoading } from "../../redux/slice/constant";
 import {
   clearWalletState,
   setMagicEdenCredentials,
   setMartinAddress,
   setMartinKey,
-  setNightlyActive,
   setNightlyAddress,
   setNightlyKey,
   setPetraAddress,
@@ -57,17 +52,16 @@ import { getAdapter } from "../../utils/adapter";
 import {
   API_METHODS,
   APTOS_BRAND_KEY,
+  BTCWallets,
   MAGICEDEN_WALLET_KEY,
   MARTIN_WALLET_KEY,
-  NIGHTLT_WALLET_KEY,
+  NIGHTLY_WALLET_KEY,
   OKX_WALLET_KEY,
   PETRA_WALLET_KEY,
-  PLUG_WALLET_KEY,
   UNISAT_WALLET_KEY,
   XVERSE_WALLET_KEY,
-  BTCWallets,
-  paymentWallets,
   apiUrl,
+  paymentWallets,
   sliceAddress,
 } from "../../utils/common";
 import { propsContainer } from "../props-container";
@@ -88,9 +82,11 @@ const Nav = (props) => {
   const martinAddress = walletState.martin.address;
   const xverseAddress = walletState.xverse.ordinals.address;
   const unisatAddress = walletState.unisat.address;
+  const nightlyAddress = walletState.nightly.address;
   const magicEdenAddress = walletState.magicEden.ordinals.address;
 
   const [isConnectModal, setConnectModal] = useState(false);
+  const [nightlyWalletConnection, setNightlyWalletConnection] = useState(false);
   const [open, setOpen] = useState(false);
   const [screenDimensions, setScreenDimensions] = React.useState({
     width: window.screen.width,
@@ -99,8 +95,6 @@ const Nav = (props) => {
   const [current, setCurrent] = useState();
 
   const avatar = process.env.REACT_APP_AVATAR;
-  const devNet = process.env.REACT_APP_APTOS_DEVNET;
-  const testNet = process.env.REACT_APP_APTOS_TESTNET;
   const SatsConnectNamespace = "sats-connect:";
 
   const { confirm } = Modal;
@@ -227,18 +221,6 @@ const Nav = (props) => {
   function isSatsConnectCompatibleWallet(wallet) {
     return SatsConnectNamespace in wallet.features;
   }
-  // console.log(devNet);
-  // const callFaucet = async (amount, address) => {
-  //   const faucetClient = new AptosFaucetClient({
-  //     BASE: IS_DEV ? devNet : testNet,
-  //   });
-  //   const request = {
-  //     amount,
-  //     address,
-  //   };
-  //   const response = await faucetClient.fund({ requestBody: request });
-  //   return response.txn_hashes;
-  // };
 
   const connectWallet = async (walletName) => {
     if (walletName === XVERSE_WALLET_KEY) {
@@ -414,9 +396,10 @@ const Nav = (props) => {
       } catch (error) {
         // { code: 4001, message: "User rejected the request."}
       }
-    } else if (walletName === NIGHTLT_WALLET_KEY) {
+    } else if (walletName === NIGHTLY_WALLET_KEY) {
       // Nightly wallet
-      dispatch(setNightlyActive());
+      // dispatch(setNightlyActive());
+      setNightlyWalletConnection(true);
       collapseConnectedModal();
     } else {
       collapseConnectedModal();
@@ -457,17 +440,17 @@ const Nav = (props) => {
         return cond(
           walletState.active.includes(MARTIN_WALLET_KEY) ||
             walletState.active.includes(OKX_WALLET_KEY) ||
-            walletState.active.includes(NIGHTLT_WALLET_KEY)
+            walletState.active.includes(NIGHTLY_WALLET_KEY)
         );
       }
       case MARTIN_WALLET_KEY: {
         return cond(
           walletState.active.includes(PETRA_WALLET_KEY) ||
             walletState.active.includes(OKX_WALLET_KEY) ||
-            walletState.active.includes(NIGHTLT_WALLET_KEY)
+            walletState.active.includes(NIGHTLY_WALLET_KEY)
         );
       }
-      case NIGHTLT_WALLET_KEY: {
+      case NIGHTLY_WALLET_KEY: {
         return cond(
           walletState.active.includes(PETRA_WALLET_KEY) ||
             walletState.active.includes(OKX_WALLET_KEY) ||
@@ -477,7 +460,7 @@ const Nav = (props) => {
       case OKX_WALLET_KEY: {
         return cond(
           walletState.active.includes(PETRA_WALLET_KEY) ||
-            walletState.active.includes(NIGHTLT_WALLET_KEY) ||
+            walletState.active.includes(NIGHTLY_WALLET_KEY) ||
             walletState.active.includes(MARTIN_WALLET_KEY)
         );
       }
@@ -535,10 +518,15 @@ const Nav = (props) => {
     const adapter = await getAdapter();
     try {
       const response = await adapter.connect();
-      if (response.status === "APPROVED") {
-        dispatch(setNightlyAddress(response.args));
+
+      if (response.status === "Approved") {
+        dispatch(setNightlyAddress(response.address));
+        dispatch(setNightlyKey(response.publicKey));
+      } else {
+        setNightlyWalletConnection(false);
       }
     } catch (error) {
+      setNightlyWalletConnection(false);
       await adapter.disconnect().catch(() => {});
       console.log(error);
     }
@@ -547,28 +535,13 @@ const Nav = (props) => {
 
   useEffect(() => {
     (async () => {
-      if (walletState.active.includes(NIGHTLT_WALLET_KEY)) {
-        const adapter = await init();
-        // Events
-        adapter.on("connect", (accInfo) => {
-          console.log("connect", accInfo);
-          dispatch(setNightlyAddress(accInfo.address));
-          dispatch(setNightlyKey(accInfo.publicKey));
-        });
-
-        adapter.on("disconnect", () => {
-          dispatch(clearWalletState(NIGHTLT_WALLET_KEY));
-          console.log("adapter disconnected");
-        });
-
-        adapter.on("accountChange", (accInfo) => {
-          dispatch(setNightlyAddress(accInfo.address));
-          dispatch(setNightlyKey(accInfo.publicKey));
-        });
+      if (nightlyWalletConnection) {
+        await init();
+        // Events goes here
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dispatch, walletState.active]);
+  }, [dispatch, nightlyWalletConnection]);
 
   const onClick = (e) => {
     setCurrent(e.key);
@@ -832,7 +805,8 @@ const Nav = (props) => {
             unisatAddress ||
             magicEdenAddress ||
             petraAddress ||
-            martinAddress ? (
+            martinAddress ||
+            nightlyAddress ? (
               <Col>
                 <Flex
                   gap={5}
@@ -853,6 +827,8 @@ const Nav = (props) => {
                           <>{sliceAddress(magicEdenAddress, 5)}</>
                         ) : petraAddress ? (
                           <>{sliceAddress(petraAddress, 5)}</>
+                        ) : nightlyAddress ? (
+                          <>{sliceAddress(nightlyAddress, 5)}</>
                         ) : (
                           <>{sliceAddress(martinAddress, 5)}</>
                         )}
@@ -1035,6 +1011,8 @@ const Nav = (props) => {
                     <>{sliceAddress(magicEdenAddress, 5)}</>
                   ) : petraAddress ? (
                     <>{sliceAddress(petraAddress, 5)}</>
+                  ) : nightlyAddress ? (
+                    <>{sliceAddress(nightlyAddress, 5)}</>
                   ) : (
                     <>{sliceAddress(martinAddress, 5)}</>
                   )}
@@ -1056,21 +1034,26 @@ const Nav = (props) => {
               <Row
                 justify={"end"}
                 className="iconalignment pointer"
-                onClick={() => {
+                onClick={async () => {
+                  let adapter;
+                  if (walletState.active.includes(NIGHTLY_WALLET_KEY)) {
+                    adapter = await getAdapter();
+                    await adapter.disconnect();
+                    setNightlyWalletConnection(false);
+                  }
                   successMessageNotify("Your are signed out!");
-                  dispatch(setAirPoints(0));
-                  walletState.active.forEach((wallet) => {
+                  walletState.active.forEach(async (wallet) => {
                     if (wallet === XVERSE_WALLET_KEY) {
                       dispatch(clearWalletState(XVERSE_WALLET_KEY));
                     } else if (wallet === UNISAT_WALLET_KEY) {
                       dispatch(clearWalletState(UNISAT_WALLET_KEY));
-                    } else if (wallet === PLUG_WALLET_KEY) {
-                      dispatch(clearWalletState(PLUG_WALLET_KEY));
                     } else if (wallet === MAGICEDEN_WALLET_KEY) {
                       dispatch(clearWalletState(MAGICEDEN_WALLET_KEY));
                     } else if (wallet === PETRA_WALLET_KEY) {
                       dispatch(clearWalletState(PETRA_WALLET_KEY));
                       window.aptos.disconnect();
+                    } else if (wallet === NIGHTLY_WALLET_KEY) {
+                      dispatch(clearWalletState(NIGHTLY_WALLET_KEY));
                     } else {
                       dispatch(clearWalletState(MARTIN_WALLET_KEY));
                       window.martian.disconnect();
@@ -1116,6 +1099,11 @@ const Nav = (props) => {
                         {sliceAddress(martinAddress, 9)}{" "}
                         {addressRendererWithCopy(martinAddress)}
                       </>
+                    ) : nightlyAddress ? (
+                      <>
+                        {sliceAddress(nightlyAddress, 9)}{" "}
+                        {addressRendererWithCopy(nightlyAddress)}
+                      </>
                     ) : (
                       "---"
                     )}
@@ -1126,7 +1114,8 @@ const Nav = (props) => {
 
             <Col>
               {walletState.active.includes(PETRA_WALLET_KEY) ||
-              walletState.active.includes(MARTIN_WALLET_KEY) ? null : (
+              walletState.active.includes(MARTIN_WALLET_KEY) ||
+              walletState.active.includes(NIGHTLY_WALLET_KEY) ? null : (
                 <CustomButton
                   className="font-size-18 black-bg text-color-one border-none"
                   title={"Connect"}
@@ -1208,21 +1197,29 @@ const Nav = (props) => {
                   xl: "end",
                 }}
                 className="iconalignment pointer"
-                onClick={() => {
-                  successMessageNotify("Your are signed out!");
+                onClick={async () => {
+                  let adapter;
+                  if (walletState.active.includes(NIGHTLY_WALLET_KEY)) {
+                    adapter = await getAdapter();
+                    await adapter.disconnect();
+                    setNightlyWalletConnection(false);
+                  }
+                  successMessageNotify("Your are signed outs!");
                   walletState.active.forEach((wallet) => {
                     if (wallet === XVERSE_WALLET_KEY) {
                       dispatch(clearWalletState(XVERSE_WALLET_KEY));
                     } else if (wallet === UNISAT_WALLET_KEY) {
                       dispatch(clearWalletState(UNISAT_WALLET_KEY));
-                    } else if (wallet === PLUG_WALLET_KEY) {
-                      dispatch(clearWalletState(PLUG_WALLET_KEY));
+                    } else if (wallet === MAGICEDEN_WALLET_KEY) {
+                      dispatch(clearWalletState(MAGICEDEN_WALLET_KEY));
                     } else if (wallet === PETRA_WALLET_KEY) {
                       dispatch(clearWalletState(PETRA_WALLET_KEY));
-                    } else if (wallet === MARTIN_WALLET_KEY) {
-                      dispatch(clearWalletState(MARTIN_WALLET_KEY));
+                      window.aptos.disconnect();
+                    } else if (wallet === NIGHTLY_WALLET_KEY) {
+                      dispatch(clearWalletState(NIGHTLY_WALLET_KEY));
                     } else {
-                      dispatch(clearWalletState(MAGICEDEN_WALLET_KEY));
+                      dispatch(clearWalletState(MARTIN_WALLET_KEY));
+                      window.martian.disconnect();
                     }
                   });
                   onClose();

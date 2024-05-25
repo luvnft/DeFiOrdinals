@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { MAGICEDEN_WALLET_KEY, MARTIN_WALLET_KEY, NIGHTLT_WALLET_KEY, PETRA_WALLET_KEY, UNISAT_WALLET_KEY, XVERSE_WALLET_KEY } from "../../utils/common";
+import { MAGICEDEN_WALLET_KEY, MARTIN_WALLET_KEY, NIGHTLY_WALLET_KEY, PETRA_WALLET_KEY, UNISAT_WALLET_KEY, XVERSE_WALLET_KEY } from "../../utils/common";
 
 const state = {
   xverse: {
@@ -90,13 +90,9 @@ const walletSlice = createSlice({
       state.martin.publicKey = action.payload;
     },
 
-    setNightlyActive: (state) => {
-      if (!state.active.includes(NIGHTLT_WALLET_KEY))
-        state.active.push(NIGHTLT_WALLET_KEY);
-    },
-
     setNightlyAddress: (state, action) => {
       state.nightly.address = action.payload;
+      state.active.push(NIGHTLY_WALLET_KEY);
     },
 
     setNightlyKey: (state, action) => {
@@ -134,6 +130,11 @@ const walletSlice = createSlice({
           publicKey: null,
           address: null
         }
+      } else if (action.payload === NIGHTLY_WALLET_KEY) {
+        state.nightly = {
+          publicKey: null,
+          address: null
+        }
       }
       state.active = state.active.filter((wallet) => action.payload !== wallet);
     },
@@ -150,7 +151,6 @@ export const {
   setMartinAddress,
   clearWalletState,
   setXverseOrdinals,
-  setNightlyActive,
   setNightlyAddress,
   setXverseSignature,
   setUnisatCredentials,

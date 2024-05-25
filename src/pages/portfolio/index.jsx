@@ -29,7 +29,7 @@ import {
   IS_USER,
   MAGICEDEN_WALLET_KEY,
   MARTIN_WALLET_KEY,
-  NIGHTLT_WALLET_KEY,
+  NIGHTLY_WALLET_KEY,
   PETRA_WALLET_KEY,
   UNISAT_WALLET_KEY,
   XVERSE_WALLET_KEY,
@@ -232,7 +232,7 @@ const Portfolio = (props) => {
                 <>{renderWalletAddress(petraAddress)}</>
               ) : wallet === MARTIN_WALLET_KEY ? (
                 <>{renderWalletAddress(martinAddress)}</>
-              ) : wallet === NIGHTLT_WALLET_KEY ? (
+              ) : wallet === NIGHTLY_WALLET_KEY ? (
                 <>{renderWalletAddress(nightltAddress)}</>
               ) : (
                 <>{renderWalletAddress(petraAddress)}</>

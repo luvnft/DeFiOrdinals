@@ -40,7 +40,6 @@ const Dashboard = (props) => {
   const [isOfferBtnLoading, setIsOfferBtnLoading] = useState(false);
   const BTC_ZERO = process.env.REACT_APP_BTC_ZERO;
 
-  console.log("approvedCollections", approvedCollections);
   const approvedCollectionColumns = [
     {
       key: "Collection",
