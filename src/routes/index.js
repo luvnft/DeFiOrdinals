@@ -6,11 +6,11 @@ export const publicRoutes = [
     path: "/",
     component: lazy(() => import("../pages/home")),
   },
-  // {
-  //   name: "Borrow",
-  //   path: "/borrow",
-  //   component: lazy(() => import("../pages/borrow")),
-  // },
+  {
+    name: "Borrowing",
+    path: "/borrowing",
+    component: lazy(() => import("../pages/borrowing")),
+  },
   {
     name: "Faucet",
     path: "/faucet",

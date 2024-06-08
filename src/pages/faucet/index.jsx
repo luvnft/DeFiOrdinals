@@ -1,105 +1,140 @@
+import { Aptos, AptosConfig, Network } from "@aptos-labs/ts-sdk";
+import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import { Col, Row } from "antd";
+import { useEffect, useState } from "react";
+import CustomButton from "../../component/Button";
+import Notify from "../../component/notification";
 import { propsContainer } from "../../container/props-container";
-import {
-  Account,
-  Aptos,
-  AptosConfig,
-  parseTypeTag,
-  NetworkToNetworkName,
-  Network,
-  AccountAddress,
-  U64,
-  Ed25519PrivateKey,
-} from "@aptos-labs/ts-sdk";
-import { useEffect } from "react";
-import { Principal } from "@dfinity/principal";
+import { contractAddress, createAptogotchi } from "../../utils/aptosService";
+import { getAptosClient } from "../../utils/aptosClient";
 
 const Faucet = (props) => {
-  const { reduxState, dispatch, isPlugError } = props.redux;
+  const { reduxState } = props.redux;
+  const { signAndSubmitTransaction, connected, connect, wallets, account } =
+    useWallet();
   const walletState = reduxState.wallet;
-  const devNet = process.env.REACT_APP_APTOS_DEVNET;
   const petraAddress = walletState.petra.address;
 
-  const APTOS_COIN = "0x1::aptos_coin::AptosCoin";
-  const COIN_STORE = `0x1::coin::CoinStore<${APTOS_COIN}>`;
-  const ALICE_INITIAL_BALANCE = 100_000_000;
-  const BOB_INITIAL_BALANCE = 100;
-  const TRANSFER_AMOUNT = 100;
-  const APTOS_NETWORK =
-    NetworkToNetworkName[process.env.APTOS_NETWORK] || Network.DEVNET;
+  // console.log("connected", connected);
+  // console.log("wallet", wallets[0].name);
+  // const [account, setAccount] = useState(null);
+  const [petraAccount, setAccount] = useState(null);
+  const [transactionResult, setTransactionResult] = useState(null);
+  const [gotchiName, setGotchiName] = useState("Abishek006");
 
-  const config = new AptosConfig({ network: APTOS_NETWORK });
-  const aptos = new Aptos(config);
+  const config = new AptosConfig({
+    network: Network.DEVNET,
+  });
+  const aptosClient = new Aptos(config);
 
-  const alice = Account.generate();
-  const bob = Account.generate();
-
-  const balance = async (sdk, name, address) => {
-    let balance = await sdk.getAccountResource({
-      accountAddress: address,
-      resourceType: COIN_STORE,
-    });
-
-    let amount = Number(balance.coin.value);
-
-    console.log(`${name}'s balance is: ${amount}`);
-    return amount;
-  };
-
-  const initAliceAccount = async () => {
-    await aptos.fundAccount({
-      accountAddress: alice.accountAddress,
-      amount: ALICE_INITIAL_BALANCE,
-    });
-
-    await aptos.fundAccount({
-      accountAddress: bob.accountAddress,
-      amount: BOB_INITIAL_BALANCE,
-    });
-
-    await balance(aptos, "Alice", alice.accountAddress);
-    await balance(aptos, "Bob", bob.accountAddress);
-
-    // Transfer between users
-    // const txn = await aptos.transaction.build.simple({
-    //   sender: alice.accountAddress,
-    //   data: {
-    //     function: "0x1::coin::transfer",
-    //     typeArguments: [parseTypeTag(APTOS_COIN)],
-    //     functionArguments: [
-    //       AccountAddress.from(bob.accountAddress),
-    //       new U64(TRANSFER_AMOUNT),
-    //     ],
-    //   },
-    // });
-
-    // console.log("\n=== Transfer transaction ===\n");
-    // let committedTxn = await aptos.signAndSubmitTransaction({
-    //   signer: alice,
-    //   transaction: txn,
-    // });
-    // console.log(`Committed transaction: ${committedTxn.hash}`);
-    // await aptos.waitForTransaction({ transactionHash: committedTxn.hash });
-
-    // console.log("\n=== Balances after transfer ===\n");
-    // await balance(aptos, "Alice", alice.accountAddress);
-    // await balance(aptos, "Bob", bob.accountAddress);
+  const connectWallet = async () => {
+    try {
+      const aptosClient = getAptosClient(Network.DEVNET);
+      const payload = {
+        type: "entry_function_payload",
+        function:
+          "0x7b8a71405e76e1a3cccc7e9f5f01d401b466f02d7731dc753afa8a2b9ac7bc68::borrow::get_all_borrow_requests",
+        arguments: [petraAddress], // Add function arguments here
+        type_arguments: [],
+      };
+      // console.log("payload", payload);
+      // console.log("client", aptosClient);
+      const response = await aptosClient.view(payload);
+      // console.log("response", response);
+    } catch (error) {
+      console.log("Failed to fetch resource:", error);
+    }
   };
 
   // useEffect(() => {
-  //   initAliceAccount();
-  //   // to derive an account with a Single Sender Ed25519 key scheme
-  //   const privateKey = new Ed25519PrivateKey(
-  //     "0xbf0ca24ae7f35be68564b394678bd563ec1412168c86dd35ff3f302f41a0e165"
-  //   );
-  //   const accountAddress = AccountAddress.from(petraAddress);
-  //   const account = Account.fromPrivateKey({
-  //     privateKey,
-  //     address: accountAddress,
-  //     legacy: false,
-  //   });
-  //   console.log("account", account);
+  //   (async () => {
+  //     try {
+  //       const payload = {
+  //         type: "entry_function_payload",
+  //         function: `${contractAddress}::main::get_aptogotchi`,
+  //         arguments: [account.address], // Add function arguments here
+  //         type_arguments: [],
+  //       };
+  //       const response = await aptosClient.view(payload);
+  //       console.log("response", response);
+  //     } catch (error) {
+  //       console.log("Failed to fetch resource:", error);
+  //     }
+  //   })();
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
   // }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        if (petraAccount) {
+          const aptosClient = getAptosClient(Network.DEVNET);
+          const payload = {
+            type: "entry_function_payload",
+            function:
+              "0x7b8a71405e76e1a3cccc7e9f5f01d401b466f02d7731dc753afa8a2b9ac7bc68::borrow::get_all_borrow_requests",
+            arguments: [petraAccount.address], // Add function arguments here
+            type_arguments: [],
+          };
+          // console.log("payload", payload);
+          // console.log("client", aptosClient);
+          const response = await aptosClient.view(payload);
+          // console.log("response", response);
+        }
+      } catch (error) {
+        console.log("Failed to fetch resource:", error);
+      }
+    })();
+  }, [petraAccount]);
+
+  // console.log("account", account);
+  // console.log("transactionResult", transactionResult);
+
+  const handleCreateAptogotchi = async () => {
+    if (connected) {
+      try {
+        const payload = {
+          type: "entry_function_payload",
+          function: `${contractAddress}::main::create_aptogotchi`,
+          arguments: [
+            "Abiii007",
+            Math.floor(Math.random() * Number(5)),
+            Math.floor(Math.random() * Number(6)),
+            Math.floor(Math.random() * Number(4)),
+          ], // Add function arguments here
+          type_arguments: [],
+        };
+
+        const transaction = await window.aptos.signAndSubmitTransaction(
+          payload
+        );
+        // console.log("transaction", transaction);
+        await aptosClient.waitForTransaction(transaction.hash);
+        setTransactionResult(transaction);
+      } catch (error) {
+        console.log("Create Aptogochi error", error);
+        Notify("warning", error.message);
+      }
+    } else {
+      Notify("warning", "Wallet not connected error");
+    }
+  };
+
+  // useEffect(() => {
+  //   if (!connected) {
+  //     try {
+  //       connect(wallets[0].name);
+  //     } catch (error) {
+  //       console.log("app connection error", error);
+  //     } finally {
+  //       // Notify("success", "Petra connected!");
+  //     }
+  //   }
+  //   // const newAccount = await createAccount();
+  //   // // newAccount.accountAddress.hexString = petraAddress;
+  //   // setAccount(newAccount);
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [petraAddress]);
 
   return (
     <>
@@ -107,6 +142,18 @@ const Faucet = (props) => {
         <Col>
           <h1 className="font-xlarge gradient-text-one">Faucet</h1>
         </Col>
+      </Row>
+
+      <Row>
+        {/* <CustomButton
+          className={
+            "font-weight-600 letter-spacing-small font-medium btn-height click-btn"
+          }
+          title="Create gotchi"
+          size="medium"
+          // onClick={handleCreateAptogotchi}
+          onClick={connectWallet}
+        /> */}
       </Row>
 
       {/* <Row justify={"center"}>

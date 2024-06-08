@@ -1335,6 +1335,54 @@ body::-webkit-scrollbar-thumb {
   align-items: center;
 }
 
+.themed-card-dark>.ant-card-body {
+  background-color: #000000;
+  padding: 3px 20px 30px !important;
+  border-radius: 0 0 8px 8px;
+}
+
+.themed-card-dark>.ant-card-cover {
+  background-color: #000000;
+  border-radius: 8px 8px 0px 0px;
+}
+
+.themed-card-dark {
+  border: 1px solid #3e3e3e;
+  border-radius: 9px;
+}
+
+.selection-css {
+  position: absolute;
+  padding: 0px 12px;
+  border-radius: 8px;
+  z-index: 2;
+  border: 1px solid;
+}
+
+.card-selected {
+  bottom: 7px;
+  right: 22.5px;
+}
+
+.card-unselected {
+  bottom: 7px;
+  right: 27px;
+}
+
+.selected-dark {
+  color: black;
+  background-color: #5adcad;
+}
+
+.selected-light {
+  background-color: #88ffd4;
+}
+
+.unselected-dark {
+  color: #9d9d9dd4;
+  border-color: #5b5b5b9d;
+}
+
 /* ANTD - Table */
 
 /* Table empty No Data */

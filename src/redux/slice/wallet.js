@@ -32,6 +32,7 @@ const state = {
     publicKey: null,
     address: null,
   },
+  isTableCreated: false,
   active: [],
 };
 
@@ -99,6 +100,10 @@ const walletSlice = createSlice({
       state.nightly.publicKey = action.payload;
     },
 
+    setTableCreated: (state, action) => {
+      state.isTableCreated = action.payload;
+    },
+
     clearWalletState: (state, action) => {
       if (action.payload === XVERSE_WALLET_KEY) {
         state.xverse = {
@@ -147,6 +152,7 @@ export const {
   setMartinKey,
   setNightlyKey,
   setPetraAddress,
+  setTableCreated,
   setXversePayment,
   setMartinAddress,
   clearWalletState,

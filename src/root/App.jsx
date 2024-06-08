@@ -26,7 +26,7 @@ const App = () => {
   return (
     <React.Fragment>
       <Provider store={store}>
-        <AptosWalletAdapterProvider plugins={wallets} autoConnect={true}>
+        <AptosWalletAdapterProvider plugins={wallets} autoConnect={false}>
           <PersistGate loading={null} persistor={persistor}>
             <LoadingWrapper>
               <Router>

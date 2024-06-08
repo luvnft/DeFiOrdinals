@@ -1,13 +1,12 @@
+import { Actor, HttpAgent } from "@dfinity/agent";
 import axios from "axios";
-import plug from "../assets/wallet-logo/plug_logo.png";
-import unisat from "../assets/wallet-logo/unisat_logo.png";
-import petra from "../assets/wallet-logo/petra.png";
-import xverse from "../assets/wallet-logo/xverse_logo_whitebg.png";
+import magiceden from "../assets/brands/magiceden.svg";
+import okx from "../assets/wallet-logo/OKX_Logo.svg";
 import martin from "../assets/wallet-logo/martin.jpg";
 import nightly from "../assets/wallet-logo/nightly.png";
-import magiceden from "../assets/brands/magiceden.svg"
-import okx from "../assets/wallet-logo/OKX_Logo.svg"
-import { Actor, HttpAgent } from "@dfinity/agent";
+import petra from "../assets/wallet-logo/petra.png";
+import unisat from "../assets/wallet-logo/unisat_logo.png";
+import xverse from "../assets/wallet-logo/xverse_logo_whitebg.png";
 
 export const API_METHODS = {
   get: axios.get,
@@ -115,6 +114,48 @@ export const calculateFee = (bytes, preference) => {
     3.47
   )
 }
+
+export const calculateAPY = (interestRate, numberOfDays, toFixed = 2) => {
+  const rateDecimal = interestRate / 100;
+  const apy = Math.pow(1 + rateDecimal, 365 / numberOfDays) - 1;
+  const apyPercentage = apy * 100;
+
+  return apyPercentage.toFixed(toFixed);
+}
+
+export const calculateDailyInterestRate = (annualInterestRate, toFixed = 2) => {
+  const rateDecimal = annualInterestRate / 100;
+  const dailyInterestRate = rateDecimal / 365;
+  const dailyInterestRatePercentage = dailyInterestRate * 100;
+
+  return dailyInterestRatePercentage.toFixed(toFixed); // Return daily interest rate rounded to 5 decimal places
+}
+
+// Getting time ago statement
+export const getTimeAgo = (timestamp) => {
+  const now = new Date(); // Current date and time
+  const diff = now.getTime() - timestamp; // Difference in milliseconds
+
+  // Convert milliseconds to seconds
+  const seconds = Math.floor(diff / 1000);
+
+  // Calculate time difference in various units
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  // Determine appropriate phrase based on time difference
+  if (seconds < 60) {
+    return "Just now";
+  } else if (minutes < 60) {
+    return `${minutes} minute${minutes === 1 ? '' : 's'} ago`;
+  } else if (hours < 24) {
+    return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+  } else {
+    return `${days} day${days === 1 ? '' : 's'} ago`;
+  }
+}
+
 
 export const fetchCollections = async (collections) => {
   try {

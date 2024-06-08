@@ -1,4 +1,6 @@
+import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import { useWallets } from "@wallet-standard/react";
+import { Network } from "@aptos-labs/ts-sdk";
 import {
   Col,
   ConfigProvider,
@@ -43,15 +45,16 @@ import {
   setNightlyKey,
   setPetraAddress,
   setPetraKey,
+  setTableCreated,
   setUnisatCredentials,
   setXverseBtc,
   setXverseOrdinals,
   setXversePayment,
 } from "../../redux/slice/wallet";
 import { getAdapter } from "../../utils/adapter";
+import { getAptosClient } from "../../utils/aptosClient";
 import {
   API_METHODS,
-  APTOS_BRAND_KEY,
   BTCWallets,
   MAGICEDEN_WALLET_KEY,
   MARTIN_WALLET_KEY,
@@ -65,19 +68,28 @@ import {
   sliceAddress,
 } from "../../utils/common";
 import { propsContainer } from "../props-container";
+import { Function, Module, contractAddress } from "../../utils/aptosService";
 
 const Nav = (props) => {
   const { Text } = Typography;
   const { useBreakpoint } = Grid;
   const breakPoint = useBreakpoint();
   const { wallets } = useWallets();
+  const {
+    connect,
+    disconnect,
+    account,
+    wallets: aptosWallets,
+    connected,
+  } = useWallet();
 
   const { location, navigate } = props.router;
   const { dispatch, reduxState } = props.redux;
 
   const walletState = reduxState.wallet;
   const constantState = reduxState.constant;
-
+  // console.log("walletState", walletState);
+  const isTableCreated = walletState.isTableCreated;
   const petraAddress = walletState.petra.address;
   const martinAddress = walletState.martin.address;
   const xverseAddress = walletState.xverse.ordinals.address;
@@ -349,27 +361,25 @@ const Nav = (props) => {
       }
     } else if (walletName === PETRA_WALLET_KEY) {
       // Petra wallet
-      const getAptosWallet = () => {
-        if (APTOS_BRAND_KEY in window) {
-          return window.aptos;
-        } else {
-          window.open("https://petra.app/", `_blank`);
-          return false;
-        }
-      };
+      // const getAptosWallet = () => {
+      //   if (APTOS_BRAND_KEY in window) {
+      //     return window.aptos;
+      //   } else {
+      //     window.open("https://petra.app/", `_blank`);
+      //     return false;
+      //   }
+      // };
 
-      const wallet = getAptosWallet();
+      // const wallet = getAptosWallet();
       try {
-        if (wallet) {
-          await wallet.connect();
-          const { address, publicKey } = await wallet.account();
-          dispatch(setPetraKey(publicKey));
-          dispatch(setPetraAddress(address));
-          collapseConnectedModal();
-          successMessageNotify("Petra Wallet connected!");
-        } else {
-          Notify("error", "Connection failed!");
-        }
+        // if (!account?.address && !connected) {
+        await connect(aptosWallets[0].name);
+        // dispatch(setPetraKey(account.publicKey));
+        // dispatch(setPetraAddress(account.address));
+        // successMessageNotify("Petra Wallet connected!");
+        // } else {
+        //   Notify("error", "Connection failed!");
+        // }
       } catch (error) {
         // { code: 4001, message: "User rejected the request."}
       }
@@ -405,7 +415,10 @@ const Nav = (props) => {
       collapseConnectedModal();
     }
   };
-
+  // console.log("isTableCreated", isTableCreated);
+  // console.log("aptosWallets", aptosWallets);
+  // console.log("connected", connected);
+  // console.log("aptosWallets[0].name", aptosWallets[0].name);
   const showDrawer = () => {
     setOpen(true);
   };
@@ -513,6 +526,40 @@ const Nav = (props) => {
       window.removeEventListener("resize", getScreenDimensions);
     };
   });
+
+  useEffect(() => {
+    (async () => {
+      if (account?.address && !petraAddress) {
+        dispatch(setPetraKey(account.publicKey));
+        dispatch(setPetraAddress(account.address));
+        successMessageNotify("Petra Wallet connected!");
+        if (!isTableCreated) {
+          try {
+            const aptosClient = getAptosClient(Network.DEVNET);
+            const payload = {
+              type: "entry_function_payload",
+              function: `${contractAddress}::${Module.BORROW}::${Function.CREATE_MANAGER}`,
+              arguments: [],
+              type_arguments: [],
+            };
+            // console.log("payload", payload);
+            const transaction = await window.aptos.signAndSubmitTransaction(
+              payload
+            );
+            // console.log("transaction", transaction);
+            await aptosClient.waitForTransaction(transaction.hash);
+            if (transaction.hash) {
+              dispatch(setTableCreated(true));
+            }
+          } catch (error) {
+            console.log("Manager error", error);
+          }
+        }
+        collapseConnectedModal();
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [account, dispatch]);
 
   const init = async () => {
     const adapter = await getAdapter();
@@ -747,6 +794,22 @@ const Nav = (props) => {
                   ref={ref2}
                 >
                   Lending
+                </Text>
+                <Text className="font-xsmall color-grey">|</Text>
+
+                <Text
+                  className={`${
+                    location.pathname === "/borrowing"
+                      ? "headertitle headerStyle"
+                      : "font-style headerCompanyName"
+                  } pointer heading-one `}
+                  onClick={() => {
+                    navigate("/borrowing");
+                    dispatch(setLendHeader(false));
+                  }}
+                  ref={ref2}
+                >
+                  Borrowing
                 </Text>
                 <Text className="font-xsmall color-grey">|</Text>
 
@@ -1052,6 +1115,9 @@ const Nav = (props) => {
                     } else if (wallet === PETRA_WALLET_KEY) {
                       dispatch(clearWalletState(PETRA_WALLET_KEY));
                       window.aptos.disconnect();
+                      if (connected) {
+                        disconnect();
+                      }
                     } else if (wallet === NIGHTLY_WALLET_KEY) {
                       dispatch(clearWalletState(NIGHTLY_WALLET_KEY));
                     } else {
@@ -1215,6 +1281,9 @@ const Nav = (props) => {
                     } else if (wallet === PETRA_WALLET_KEY) {
                       dispatch(clearWalletState(PETRA_WALLET_KEY));
                       window.aptos.disconnect();
+                      if (connected) {
+                        disconnect();
+                      }
                     } else if (wallet === NIGHTLY_WALLET_KEY) {
                       dispatch(clearWalletState(NIGHTLY_WALLET_KEY));
                     } else {
