@@ -2,11 +2,10 @@ import { Aptos, AptosConfig, Network } from "@aptos-labs/ts-sdk";
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import { Col, Row } from "antd";
 import { useEffect, useState } from "react";
-import CustomButton from "../../component/Button";
 import Notify from "../../component/notification";
 import { propsContainer } from "../../container/props-container";
-import { contractAddress, createAptogotchi } from "../../utils/aptosService";
 import { getAptosClient } from "../../utils/aptosClient";
+import { client, contractAddress } from "../../utils/aptosService";
 
 const Faucet = (props) => {
   const { reduxState } = props.redux;
@@ -63,29 +62,6 @@ const Faucet = (props) => {
   //   })();
   //   // eslint-disable-next-line react-hooks/exhaustive-deps
   // }, []);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        if (petraAccount) {
-          const aptosClient = getAptosClient(Network.DEVNET);
-          const payload = {
-            type: "entry_function_payload",
-            function:
-              "0x7b8a71405e76e1a3cccc7e9f5f01d401b466f02d7731dc753afa8a2b9ac7bc68::borrow::get_all_borrow_requests",
-            arguments: [petraAccount.address], // Add function arguments here
-            type_arguments: [],
-          };
-          // console.log("payload", payload);
-          // console.log("client", aptosClient);
-          const response = await aptosClient.view(payload);
-          // console.log("response", response);
-        }
-      } catch (error) {
-        console.log("Failed to fetch resource:", error);
-      }
-    })();
-  }, [petraAccount]);
 
   // console.log("account", account);
   // console.log("transactionResult", transactionResult);

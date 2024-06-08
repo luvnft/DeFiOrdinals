@@ -11,10 +11,16 @@ import {
   setAptosValue,
   setBtcValue,
   setCollection,
+  setOffers,
   setUserAssets,
 } from "../../redux/slice/constant";
 import { getAptosClient } from "../../utils/aptosClient";
-import { Function, Module, contractAddress } from "../../utils/aptosService";
+import {
+  Function,
+  Module,
+  client,
+  contractAddress,
+} from "../../utils/aptosService";
 import {
   API_METHODS,
   IS_USER,
@@ -318,6 +324,25 @@ export const propsContainer = (Component) => {
       })();
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [api_agent, dispatch]);
+
+    useEffect(() => {
+      (async () => {
+        try {
+          if (petraAddress) {
+            const payload = {
+              type: "entry_function_payload",
+              function: `${contractAddress}::${Module.BORROW}::${Function.GET_ALL_BORROW_REQUESTS}`,
+              arguments: [petraAddress],
+              type_arguments: [],
+            };
+            const response = await client.view(payload);
+            dispatch(setOffers(response[0]));
+          }
+        } catch (error) {
+          console.log("Failed to fetch resource:", error);
+        }
+      })();
+    }, [dispatch, petraAddress]);
 
     return (
       <Component

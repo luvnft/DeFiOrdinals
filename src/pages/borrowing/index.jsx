@@ -38,6 +38,8 @@ const Borrowing = (props) => {
   const approvedCollections = reduxState.constant.approvedCollections;
   const activeWallet = reduxState.wallet.active;
   const userAssets = reduxState.constant.userAssets;
+  const aptosvalue = reduxState.constant.aptosvalue;
+  const offers = reduxState.constant.offers;
   const petraAddress = reduxState.wallet.petra.address;
   // console.log("userAssets", userAssets);
 
@@ -175,7 +177,7 @@ const Borrowing = (props) => {
             <Flex align="center" vertical gap={5} className={"text-color-one"}>
               <Flex align="center" gap={3}>
                 <img src={Aptos} alt="noimage" width="20px" />{" "}
-                {(floor / BTC_ZERO).toFixed(3)}{" "}
+                {(((floor / BTC_ZERO) * btcvalue) / aptosvalue).toFixed(2)}{" "}
               </Flex>
               <div>${((floor / BTC_ZERO) * btcvalue).toFixed(2)} </div>
             </Flex>
@@ -199,6 +201,7 @@ const Borrowing = (props) => {
               let assets = userAssets?.find(
                 (p) => p.collectionSymbol === obj.symbol
               );
+              const filterRequestedData = [];
               if (assets?.duplicates) {
                 const { duplicates, ...rest } = assets;
                 assets = [rest, ...assets.duplicates];
@@ -206,9 +209,12 @@ const Borrowing = (props) => {
               // Terms
               const term = Number(obj.terms);
               // Converting ordinal asset price into dollar
-              const ordinalPrice = obj.floorPrice / BTC_ZERO;
+              const ordinalPrice = (
+                ((obj.floorPrice / BTC_ZERO) * btcvalue) /
+                aptosvalue
+              ).toFixed(2);
               // Max amount user can be avail for the ordinal
-              const maxQuoted = Number(ordinalPrice.toFixed(6));
+              const maxQuoted = ordinalPrice;
               // Cutoff the amount by 2 for initial display
               const amount = maxQuoted / 2;
               // Calc 85% to display close to floor price message
@@ -429,7 +435,10 @@ const Borrowing = (props) => {
                   style={{ justifyContent: "center" }}
                   width={15}
                 />{" "}
-                {(borrowModalData.floorPrice / BTC_ZERO).toFixed(3)}
+                {(
+                  ((borrowModalData.floorPrice / BTC_ZERO) * btcvalue) /
+                  aptosvalue
+                ).toFixed(3)}
               </Text>
             </Flex>
           </Col>
@@ -579,7 +588,7 @@ const Borrowing = (props) => {
                 size="large"
                 suffix={
                   <Text className={`text-color-one font-xsmall`}>
-                    $ {(borrowModalData.amount * btcvalue).toFixed(2)}
+                    $ {(borrowModalData.amount * aptosvalue).toFixed(2)}
                   </Text>
                 }
               />
@@ -607,7 +616,7 @@ const Borrowing = (props) => {
                 }
                 suffix={
                   <Text className={`text-color-one font-xsmall`}>
-                    $ {(borrowModalData.interest * btcvalue).toFixed(2)}
+                    $ {(borrowModalData.interest * aptosvalue).toFixed(2)}
                   </Text>
                 }
               />
@@ -877,7 +886,8 @@ const Borrowing = (props) => {
                             <Text
                               className={`card-box border text-color-two padding-small-box padding-small-box font-xsmall`}
                             >
-                              $ {(borrowModalData.amount * btcvalue).toFixed(2)}
+                              ${" "}
+                              {(borrowModalData.amount * aptosvalue).toFixed(2)}
                             </Text>
 
                             <Text
@@ -910,7 +920,9 @@ const Borrowing = (props) => {
                               className={`card-box border text-color-two padding-small-box font-xsmall`}
                             >
                               ${" "}
-                              {(borrowModalData.interest * btcvalue).toFixed(2)}
+                              {(borrowModalData.interest * aptosvalue).toFixed(
+                                2
+                              )}
                             </Text>
 
                             <Text
@@ -943,9 +955,9 @@ const Borrowing = (props) => {
                               className={`card-box border text-color-two padding-small-box font-xsmall`}
                             >
                               ${" "}
-                              {(borrowModalData.platformFee * btcvalue).toFixed(
-                                2
-                              )}
+                              {(
+                                borrowModalData.platformFee * aptosvalue
+                              ).toFixed(2)}
                             </Text>
 
                             <Text

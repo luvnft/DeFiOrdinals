@@ -19,6 +19,7 @@ const Lending = (props) => {
   const activeWallet = reduxState.wallet.active;
   const userAssets = reduxState.constant.userAssets;
   const petraAddress = reduxState.wallet.petra.address;
+  const aptosvalue = reduxState.constant.aptosvalue;
 
   const btcvalue = reduxState.constant.btcvalue;
 
@@ -145,7 +146,9 @@ const Lending = (props) => {
           <Flex align="center" vertical gap={5} className={"text-color-one"}>
             <Flex align="center" gap={3}>
               <img src={Aptos} alt="noimage" width="20px" />{" "}
-              {(obj.floorPrice / BTC_ZERO).toFixed(3)}{" "}
+              {(((obj.floorPrice / BTC_ZERO) * btcvalue) / aptosvalue).toFixed(
+                2
+              )}{" "}
             </Flex>
             <div>${((obj.floorPrice / BTC_ZERO) * btcvalue).toFixed(2)} </div>
           </Flex>
