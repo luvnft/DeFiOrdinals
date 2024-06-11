@@ -1,17 +1,13 @@
-import { Col, Collapse, Divider, Flex, Row, Tooltip, Typography } from "antd";
+import { Col, Flex, Row, Tooltip, Typography } from "antd";
 import React, { useState } from "react";
 import { BiSolidOffer } from "react-icons/bi";
-import { FaCaretDown } from "react-icons/fa";
-import { TbInfoSquareRounded } from "react-icons/tb";
 import { Bars } from "react-loading-icons";
 import Aptos from "../../assets/wallet-logo/aptos_logo.png";
 import CustomButton from "../../component/Button";
-import ModalDisplay from "../../component/modal";
+import LendModal from "../../component/lend-modal";
 import OffersModal from "../../component/offers-modal";
 import TableComponent from "../../component/table";
 import { propsContainer } from "../../container/props-container";
-import { contractGenerator } from "../../utils/common";
-import LendModal from "../../component/lend-modal";
 
 const Lending = (props) => {
   const { reduxState } = props.redux;
@@ -77,7 +73,7 @@ const Lending = (props) => {
                 )}
 
                 <Text
-                  // onClick={() => fetchRequests(obj)}
+                  onClick={() => fetchRequests(obj)}
                   style={{
                     width: 120,
                   }}
@@ -192,13 +188,13 @@ const Lending = (props) => {
     //     .getRequestByCollectionID(Number(obj.collectionID))
     //     .call({ from: metaAddress });
     //   console.log("requests", offers);
-    //   toggleOfferModal();
+    toggleOfferModal();
     //   // dispatch(setOffers(offers));
-    //   setOfferModalData({
-    //     ...obj,
-    //     thumbnailURI: obj.thumbnailURI,
-    //     collectionName: obj.name,
-    //   });
+    setOfferModalData({
+      ...obj,
+      thumbnailURI: obj.thumbnailURI,
+      collectionName: obj.name,
+    });
     // } catch (error) {
     //   console.log("fetch offers modal error", error);
     // }

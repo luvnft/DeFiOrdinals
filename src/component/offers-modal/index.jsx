@@ -1,5 +1,4 @@
 import { Col, Flex, Row, Typography } from "antd";
-import Title from "antd/es/typography/Title";
 import Bars from "react-loading-icons/dist/esm/components/bars";
 import { useSelector } from "react-redux";
 import ckBtc from "../../assets/coin_logo/ckbtc.png";
@@ -91,7 +90,7 @@ const OffersModal = ({
             </Col>
 
             <Col
-              className={`mt-5 scroll-themed`}
+              className={`mt-15 scroll-themed`}
               md={24}
               style={{
                 maxHeight: "600px",
@@ -186,7 +185,7 @@ const OffersModal = ({
                 // overflowY: offers?.length > 6 && "scroll",
                 // paddingRight: offers?.length > 6 && "5px",
               }}
-              className="mt-5"
+              className="mt-15"
             >
               <TableComponent
                 rootClassName={"offer-table-theme"}

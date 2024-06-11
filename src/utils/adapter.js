@@ -1,4 +1,4 @@
-import { NightlyConnectAptosAdapter } from '@nightlylabs/wallet-selector-aptos'
+import { NightlyConnectAptosAdapter } from '@nightlylabs/wallet-selector-aptos';
 
 let _adapter;
 export const getAdapter = async (persistent = true) => {

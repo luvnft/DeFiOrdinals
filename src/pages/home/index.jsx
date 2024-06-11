@@ -132,9 +132,9 @@ const Home = (props) => {
                           width={breakpoints.xs ? "90px" : "100%"}
                           height={"75dvw"}
                           alt={name}
-                          src={collection?.data?.imageURI}
+                          src={collection?.imageURI}
                           onError={(e) =>
-                            (e.target.src = `${process.env.PUBLIC_URL}/collections/${collection?.data?.symbol}.png`)
+                            (e.target.src = `${process.env.PUBLIC_URL}/collections/${collection?.symbol}.png`)
                           }
                           // src={`${process.env.PUBLIC_URL}/collections/${collection?.data?.symbol}.png`}
                         />

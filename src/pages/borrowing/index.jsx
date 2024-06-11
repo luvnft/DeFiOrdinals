@@ -10,7 +10,7 @@ import {
   Tooltip,
   Typography,
 } from "antd";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { BiSolidOffer } from "react-icons/bi";
 import { FaCaretDown } from "react-icons/fa";
 import { GoAlertFill } from "react-icons/go";
@@ -48,6 +48,8 @@ const Borrowing = (props) => {
   const CONTENT_API = process.env.REACT_APP_ORDINALS_CONTENT_API;
 
   const { Text } = Typography;
+
+  const amountRef = useRef(null);
   // USE STATE
   const [offerModalData, setOfferModalData] = useState({});
   const [isOffersModal, setIsOffersModal] = useState(false);
@@ -122,10 +124,10 @@ const Borrowing = (props) => {
       },
     },
     {
-      key: "request",
+      key: "best_loan",
       title: "Best Loan",
       align: "center",
-      dataIndex: "request",
+      dataIndex: "best_loan",
       render: (_, obj) => {
         return (
           <Flex align="center" justify="center">
@@ -230,6 +232,9 @@ const Borrowing = (props) => {
               const sliderLTV = Math.round(
                 ((amount * btcvalue) / (ordinalPrice * btcvalue)) * 100
               );
+              setTimeout(() => {
+                amountRef.current.focus();
+              }, 300);
               toggleBorrowModal();
               setBorrowModalData({
                 ...obj,
@@ -268,6 +273,12 @@ const Borrowing = (props) => {
   };
 
   const fetchRequests = async (obj) => {
+    toggleOfferModal();
+    setOfferModalData({
+      ...obj,
+      thumbnailURI: obj.thumbnailURI,
+      collectionName: obj.name,
+    });
     // try {
     //   const contract = await contractGenerator();
     //   console.log("contract", contract, "obj.collectionID", obj.collectionID);
@@ -575,7 +586,7 @@ const Borrowing = (props) => {
                     interest: interest ? interest : "0.00",
                   }));
                 }}
-                // ref={amountRef}
+                ref={amountRef}
                 prefix={
                   <img
                     src={Aptos}
@@ -633,7 +644,7 @@ const Borrowing = (props) => {
 
         {/* Borrow collateral display */}
         <Row
-          className={`mt-15 border border-radius-8 scroll-themed border-padding-medium`}
+          className={`mt-15 border border-radius-8 border-radius-8 scroll-themed border-padding-medium`}
           gutter={[0, 20]}
           style={{
             maxHeight: "210px",

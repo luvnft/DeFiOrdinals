@@ -1,6 +1,6 @@
+import { Network } from "@aptos-labs/ts-sdk";
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import { useWallets } from "@wallet-standard/react";
-import { Network } from "@aptos-labs/ts-sdk";
 import {
   Col,
   ConfigProvider,
@@ -53,6 +53,7 @@ import {
 } from "../../redux/slice/wallet";
 import { getAdapter } from "../../utils/adapter";
 import { getAptosClient } from "../../utils/aptosClient";
+import { Function, Module, contractAddress } from "../../utils/aptosService";
 import {
   API_METHODS,
   BTCWallets,
@@ -68,7 +69,6 @@ import {
   sliceAddress,
 } from "../../utils/common";
 import { propsContainer } from "../props-container";
-import { Function, Module, contractAddress } from "../../utils/aptosService";
 
 const Nav = (props) => {
   const { Text } = Typography;

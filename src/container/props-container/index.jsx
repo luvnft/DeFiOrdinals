@@ -336,6 +336,7 @@ export const propsContainer = (Component) => {
               type_arguments: [],
             };
             const response = await client.view(payload);
+            console.log("response", response);
             dispatch(setOffers(response[0]));
           }
         } catch (error) {
