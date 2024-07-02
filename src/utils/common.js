@@ -40,6 +40,7 @@ const btc = process.env.REACT_APP_BTC_CANISTER_ID;
 const eth = process.env.REACT_APP_ETH_CANISTER_ID;
 const affiliates = process.env.REACT_APP_AFFILIATES_CANISTER_ID;
 const hostLink = process.env.REACT_APP_HOST;
+export const aptos_canister = process.env.REACT_APP_APTOS_CANISTER_ID;
 
 export const whitelist = [ordinals, btc, eth, affiliates];
 export const host = hostLink;
@@ -155,91 +156,6 @@ export const getTimeAgo = (timestamp) => {
     return `${days} day${days === 1 ? '' : 's'} ago`;
   }
 }
-
-
-export const fetchCollections = async (collections) => {
-  try {
-    const promises = collections.map(async (collection) => {
-      const collectionDetails = await axios({
-        url: `${process.env.REACT_APP_MAGICEDEN_API}/v2/ord/btc/stat?collectionSymbol=${collection.symbol}`,
-        method: "GET",
-        headers: {
-          accept: "application/json",
-          Authorization: `Bearer ${process.env.REACT_APP_MAGICEDEN_BEARER}`,
-        },
-      });
-
-      return {
-        ...collectionDetails?.data,
-        imageURI: collection?.imageURI,
-        totalVolume: collectionDetails?.data?.totalVolume
-          ? collectionDetails?.data?.totalVolume
-          : collection?.totalVolume,
-        floorPrice: collectionDetails?.data?.floorPrice
-          ? collectionDetails?.data?.floorPrice
-          : collection?.floorPrice,
-      };
-    });
-
-    const results = await Promise.all(promises);
-    return results;
-  } catch (error) {
-    console.error("Error fetching data for collections:", error);
-  }
-};
-
-export const getAllAssets = async (address) => {
-  return new Promise((resolve) => {
-    try {
-      const result = API_METHODS.get(
-        `${process.env.REACT_APP_MEMPOOL_API}/api/address/${address}/utxo`
-      );
-      resolve(result);
-    } catch (error) {
-      console.log("API Error", error);
-    }
-  });
-};
-
-export const confirmAssets = async (allAssets) => {
-  const promises = allAssets
-    .filter((utxo) => utxo.status.confirmed)
-    .map(async (asset) => {
-      try {
-        const ordinalIds = await API_METHODS.get(
-          `${process.env.REACT_APP_INSCRIBE_XVERSE_API}/v1/inscriptions/utxo/${asset.txid}/${asset.vout}`
-        );
-        if (ordinalIds.data.length) {
-          return ordinalIds.data[0];
-        }
-      } catch (error) {
-        console.log("API Error", error);
-      }
-    });
-  const results = await Promise.all(promises);
-  return results;
-};
-
-export const getConfirmedAssets = async (assetIds, address) => {
-  const promises = assetIds.map(async (assetId) => {
-    try {
-      const result = await API_METHODS.get(
-        `${process.env.REACT_APP_XVERSE_API}/v1/address/${address}/ordinals/inscriptions/${assetId}`
-      );
-      const asset = result.data;
-      return {
-        id: assetId,
-        inscriptionNumber: asset.number,
-        mimeType: asset.mime_type,
-        ...asset,
-      };
-    } catch (error) {
-      console.log("API Error", error);
-    }
-  });
-  const results = await Promise.all(promises);
-  return results;
-};
 
 export const Capitalaize = (data) => {
   if (data) {

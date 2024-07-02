@@ -621,11 +621,11 @@ const Nav = (props) => {
       <Row
         className="font-style "
         onClick={() => {
-          navigate("/myassets");
+          navigate("/bridge");
           setOpen(false);
         }}
       >
-        My Assets
+        Bridge Ordinals
       </Row>
     ),
     getItem(
@@ -815,17 +815,17 @@ const Nav = (props) => {
 
                 <Text
                   className={`${
-                    location.pathname === "/myassets"
+                    location.pathname === "/bridge"
                       ? "headertitle headerStyle"
                       : "font-style headerCompanyName"
                   } pointer heading-one `}
                   onClick={() => {
-                    navigate("/myassets");
+                    navigate("/bridge");
                     dispatch(setLendHeader(false));
                   }}
                   ref={ref3}
                 >
-                  My Assets
+                  Bridge Ordinals
                 </Text>
                 <Text className="font-xsmall color-grey">|</Text>
                 <Text

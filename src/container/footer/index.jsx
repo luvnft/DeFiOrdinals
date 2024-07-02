@@ -50,8 +50,8 @@ const Footer = (props) => {
                   src={Aptos}
                   alt="noimage"
                   style={{ justifyContent: "center" }}
-                  width={breakpoints.xs ? "25dvw" : "35dvw"}
-                  height={breakpoints.xs ? "25px" : ""}
+                  width={"25px"}
+                  height={"25px"}
                 />
                 <Text
                   className={`gradient-text-one ${
@@ -81,8 +81,8 @@ const Footer = (props) => {
                   src={Bitcoin}
                   alt="noimage"
                   style={{ justifyContent: "center" }}
-                  width={breakpoints.xs ? "25dvw" : "35dvw"}
-                  height={breakpoints.xs ? "25px" : ""}
+                  width={"25px"}
+                  height={"25px"}
                 />
                 <Text
                   className={`gradient-text-one ${
@@ -105,8 +105,8 @@ const Footer = (props) => {
               src={Bitcoin_Orange}
               alt="noimage"
               style={{ justifyContent: "center" }}
-              width={breakpoints.xs ? "25dvw" : "35dvw"}
-              height={breakpoints.xs ? "25px" : ""}
+              width={"25px"}
+              height={"25px"}
             />
             <Text className="gradient-text-one font-size-20 heading-one">
               {unisatBtcBalance ? (

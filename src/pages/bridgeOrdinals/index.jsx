@@ -1,21 +1,11 @@
-import { Principal } from "@dfinity/principal";
-import {
-  Col,
-  Divider,
-  Dropdown,
-  Flex,
-  Input,
-  Row,
-  Tooltip,
-  Typography,
-} from "antd";
+import { Button, Col, Divider, Flex, Row, Tooltip, Typography } from "antd";
+import { Network } from "aptos";
 import React, { useEffect, useState } from "react";
 import { FaRegSmileWink } from "react-icons/fa";
-import { FcApproval } from "react-icons/fc";
+import { FcApproval, FcHighPriority } from "react-icons/fc";
 import { ImSad } from "react-icons/im";
-import { IoWarningSharp } from "react-icons/io5";
+import { IoInformationCircleSharp, IoWarningSharp } from "react-icons/io5";
 import { MdContentCopy } from "react-icons/md";
-import { RiInformationFill } from "react-icons/ri";
 import { Bars } from "react-loading-icons";
 import Aptos from "../../assets/wallet-logo/aptos_logo.png";
 import CustomButton from "../../component/Button";
@@ -24,73 +14,55 @@ import Notify from "../../component/notification";
 import TableComponent from "../../component/table";
 import WalletConnectDisplay from "../../component/wallet-error-display";
 import { propsContainer } from "../../container/props-container";
+import { getAptosClient } from "../../utils/aptosClient";
 import {
-  API_METHODS,
+  Function,
+  Module,
+  client,
+  contractAddress,
+} from "../../utils/aptosService";
+import {
   Capitalaize,
-  IS_USER,
   MAGICEDEN_WALLET_KEY,
   UNISAT_WALLET_KEY,
   XVERSE_WALLET_KEY,
-  apiUrl,
   sliceAddress,
 } from "../../utils/common";
+import { setLoading } from "../../redux/slice/constant";
 
-const MyAssets = (props) => {
-  const { api_agent } = props.wallet;
+const BridgeOrdinals = (props) => {
+  const { getCollaterals } = props.wallet;
   const { reduxState, dispatch, isPlugError } = props.redux;
   const activeWallet = reduxState.wallet.active;
 
   const walletState = reduxState.wallet;
   const btcValue = reduxState.constant.btcvalue;
   const aptosvalue = reduxState.constant.aptosvalue;
-  const collection = reduxState.constant.collection;
+  const userCollateral = reduxState.constant.userCollateral;
+  const approvedCollections = reduxState.constant.approvedCollections;
+  // console.log("approvedCollections", approvedCollections);
+  // console.log("userCollateral", userCollateral);
 
   const xverseAddress = walletState.xverse.ordinals.address;
   const unisatAddress = walletState.unisat.address;
   const magicEdenAddress = walletState.magicEden.ordinals.address;
-
-  const martinAddress = walletState.martin.address;
-  const nightlyAddress = walletState.nightly.address;
-  const paymentAddress = martinAddress ? martinAddress : nightlyAddress;
+  const petraAddress = walletState.petra.address;
 
   const { Text } = Typography;
 
   // USE STATE
   const [borrowData, setBorrowData] = useState(null);
   const [lendData, setLendData] = useState([]);
-  const [askModal, setAskModal] = useState(false);
 
   const [copy, setCopy] = useState("Copy");
-  const [loadingState, setLoadingState] = useState({
-    isApproveBtn: false,
-    isSupplyBtn: false,
-    isLendCkbtcBtn: false,
-    isBorrowData: false,
-    isLendData: false,
-    isWithdrawBtn: false,
-    isRepayBtn: false,
-    isAssetSupplies: false,
-    isAssetWithdraw: false,
-    isAskBtn: false,
-  });
 
   const [supplyModalItems, setSupplyModalItems] = useState(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [handleSupplyModal, setHandleSupplyModal] = useState(false);
 
-  const [askModalData, setAskModalData] = useState({
-    loanAmount: null,
-    repaymentAmount: 0,
-    interestAmount: null,
-  });
-
-  const [loopCount, setLoopCount] = useState(0);
-
   const BTC_ZERO = process.env.REACT_APP_BTC_ZERO;
   const CONTENT_API = process.env.REACT_APP_ORDINALS_CONTENT_API;
-  const WAHEED_ADDRESS = process.env.REACT_APP_WAHEED_ADDRESS;
-  const PLUG_CUSTODY_ADDRESS = process.env.REACT_APP_PLUG_CUSTODY_ADDRESS;
 
   // COMPONENTS & FUNCTIONS
   if (borrowData !== null) {
@@ -105,23 +77,6 @@ const MyAssets = (props) => {
     });
   }
 
-  const handleAskModalInput = (e) => {
-    const value = e.target.value;
-    let dotRegex = /\./;
-    const interestAmount = (5 / 100) * value;
-    const repayment = interestAmount + Number(value);
-    setAskModalData({
-      ...askModalData,
-      loanAmount: value,
-      repaymentAmount: repayment.toString().match(dotRegex)
-        ? repayment.toFixed(6)
-        : repayment,
-      interestAmount: interestAmount.toString().match(dotRegex)
-        ? interestAmount.toFixed(6)
-        : interestAmount,
-    });
-  };
-
   const handleOk = () => {
     setIsModalOpen(false);
     setHandleSupplyModal(false);
@@ -130,13 +85,6 @@ const MyAssets = (props) => {
   const handleCancel = () => {
     setIsModalOpen(false);
     setHandleSupplyModal(false);
-    setAskModal(false);
-    setAskModalData({
-      ...askModalData,
-      loanAmount: null,
-      interestAmount: null,
-      repaymentAmount: 0,
-    });
   };
 
   const options = [
@@ -153,138 +101,75 @@ const MyAssets = (props) => {
     },
   ];
 
-  // API FUNCTIONS ---------------------------------------------------
-
-  const getCollectionDetails = async (filteredData) => {
+  const handleTokenMint = async (collection) => {
     try {
-      const isFromApprovedAssets = filteredData.map(async (asset) => {
-        return new Promise(async (resolve, reject) => {
-          const result = await API_METHODS.get(
-            `${apiUrl.Asset_server_base_url}/api/v2/fetch/asset/${asset.id}`
-          );
-          resolve(...result.data?.data?.tokens);
-        });
-      });
-      const revealedPromise = await Promise.all(isFromApprovedAssets);
-      let collectionSymbols = {};
-      collection.forEach(
-        (collection) =>
-          (collectionSymbols = {
-            ...collectionSymbols,
-            [collection.symbol]: collection,
-          })
-      );
-      const collectionNames = collection.map((collection) => collection.symbol);
-      const isFromApprovedCollections = revealedPromise.filter((assets) =>
-        collectionNames.includes(assets.collectionSymbol)
-      );
+      dispatch(setLoading(true));
+      const isInitPayload = {
+        type: "entry_function_payload",
+        function: `${contractAddress}::${Module.ORDINALS_LOAN}::${Function.VIEW.GET_MAX_ORDINALS}`,
+        arguments: [petraAddress],
+        type_arguments: [],
+      };
 
-      const finalPromise = isFromApprovedCollections.map((asset) => {
-        const collection = collectionSymbols[asset.collectionSymbol];
-        return {
-          ...asset,
-          collection,
+      const [isInitTx] = await client.view(isInitPayload);
+      // console.log("isInitTx", isInitTx);
+
+      let initTx;
+      // Init ordinals
+      if (!isInitTx.vec.length) {
+        const initPayload = {
+          type: "entry_function_payload",
+          function: `${contractAddress}::${Module.ORDINALS_LOAN}::${Function.CREATE.INIT_ORDINAL}`,
+          arguments: [10000],
+          type_arguments: [],
         };
-      });
-      return finalPromise;
-    } catch (error) {
-      console.log("getCollectionDetails error", error);
-    }
-  };
-
-  const fetchWalletAssets = async (address) => {
-    try {
-      const result = await API_METHODS.get(
-        `${apiUrl.Asset_server_base_url}/api/v1/fetch/assets/${address}`
-      );
-      if (result.data?.data?.length) {
-        const filteredData = result.data.data.filter(
-          (asset) =>
-            asset.mimeType === "text/html" ||
-            asset.mimeType === "image/webp" ||
-            asset.mimeType === "image/jpeg" ||
-            asset.mimeType === "image/png" ||
-            asset.mimeType === "image/svg+xml"
-        );
-        const finalPromise = await getCollectionDetails(filteredData);
-        return finalPromise;
+        initTx = await window.aptos.signAndSubmitTransaction(initPayload);
+        // console.log("initTx", initTx);
       }
-    } catch (error) {
-      console.log("error", error);
-      setLoadingState((prev) => ({ ...prev, isBorrowData: false }));
-    }
-  };
 
-  // USeEFFECT DATA FETCHING ---------------------------------------------------
-  // Fetching User's All Assets
-  // Fetching User's All Assets
-  useEffect(() => {
-    (async () => {
-      if (
-        api_agent &&
-        (activeWallet.includes(XVERSE_WALLET_KEY) ||
-          activeWallet.includes(UNISAT_WALLET_KEY) ||
-          activeWallet.includes(MAGICEDEN_WALLET_KEY)) &&
-        collection[0]?.symbol &&
-        loopCount < 2
-      ) {
-        setLoopCount(loopCount + 1);
-        setLoadingState((prev) => ({ ...prev, isBorrowData: true }));
-        const result = await fetchWalletAssets(
-          IS_USER
-            ? xverseAddress
-              ? xverseAddress
-              : unisatAddress
-              ? unisatAddress
-              : magicEdenAddress
-            : WAHEED_ADDRESS
+      if (isInitTx.vec.length || initTx.success) {
+        // Create ordinals
+        const payload = {
+          type: "entry_function_payload",
+          function: `${contractAddress}::${Module.ORDINALS_LOAN}::${Function.CREATE.CREATE_ORDINAL}`,
+          arguments: [
+            collection.collectionSymbol,
+            collection.inscriptionNumber,
+            collection.id,
+            `${CONTENT_API}/content/${collection.id}`,
+          ],
+          type_arguments: [],
+        };
+
+        const createOrdinalTx = await window.aptos.signAndSubmitTransaction(
+          payload
         );
-        const uniqueData = result?.filter(
-          (obj, index, self) =>
-            index ===
-            self.findIndex((o) => o.collectionSymbol === obj.collectionSymbol)
-        );
-        console.log("uniqueData", uniqueData);
-
-        uniqueData?.length ? setBorrowData(uniqueData) : setBorrowData([]);
-        setLoadingState((prev) => ({ ...prev, isBorrowData: false }));
-      }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeWallet, api_agent, dispatch, collection]);
-
-  const handleAskRequest = async () => {
-    if (askModalData.repaymentAmount) {
-      setLoadingState((prev) => ({ ...prev, isAskBtn: true }));
-      try {
-        const setAddress = await api_agent.setAskRequest(
-          IS_USER
-            ? xverseAddress
-              ? xverseAddress
-              : unisatAddress
-              ? unisatAddress
-              : magicEdenAddress
-            : WAHEED_ADDRESS,
-          askModalData.id,
-          JSON.stringify(askModalData),
-          Principal.fromText(PLUG_CUSTODY_ADDRESS)
-        );
-        setLoadingState((prev) => ({ ...prev, isAskBtn: false }));
-
-        if (setAddress) {
-          Notify("success", "Ask successful!");
-        } else {
-          Notify("warning", "Asset Id already exists");
+        // console.log("createOrdinalTx", createOrdinalTx);
+        // Mint ordinals
+        if (createOrdinalTx.success) {
+          const mintPayload = {
+            type: "entry_function_payload",
+            function: `${contractAddress}::${Module.ORDINALS_LOAN}::${Function.CREATE.MINT_ORDINAL}`,
+            arguments: [
+              collection.collectionSymbol,
+              collection.inscriptionNumber,
+            ],
+            type_arguments: [],
+          };
+          const mintTx = await window.aptos.signAndSubmitTransaction(
+            mintPayload
+          );
+          // console.log("mintTx", mintTx);
+          if (mintTx.success) {
+            Notify("success", "Request submitted!");
+            getCollaterals();
+            dispatch(setLoading(false));
+          }
         }
-
-        setLoadingState((prev) => ({ ...prev, isAskBtn: false }));
-        handleCancel();
-      } catch (error) {
-        setLoadingState((prev) => ({ ...prev, isAskBtn: false }));
-        console.log("Ask request error", error);
       }
-    } else {
-      Notify("warning", "Enter the amount!");
+    } catch (error) {
+      dispatch(setLoading(false));
+      console.log("Token minting error", error);
     }
   };
 
@@ -295,8 +180,8 @@ const MyAssets = (props) => {
     }
   }, [activeWallet]);
 
-  // C2 --------------------------------------------------------------
-  const AssetsToSupplyTableColumns = [
+  // T1 --------------------------------------------------------------
+  const ordinalsColumn = [
     {
       key: "Asset",
       title: "Asset",
@@ -305,9 +190,9 @@ const MyAssets = (props) => {
       render: (_, obj) => (
         <>
           <Flex gap={5} vertical align="center">
-            {obj.contentType.includes(
-              "image/webp" || "image/jpeg" || "image/png"
-            ) ? (
+            {obj.contentType === "image/webp" ||
+            obj.contentType === "image/jpeg" ||
+            obj.contentType === "image/png" ? (
               <img
                 src={`${CONTENT_API}/content/${obj.id}`}
                 alt={`${obj.id}-borrow_image`}
@@ -315,10 +200,13 @@ const MyAssets = (props) => {
                 width={70}
                 height={70}
               />
-            ) : obj.contentType.includes("image/svg") ? (
+            ) : obj.contentType === "image/svg" ||
+              obj.contentType === "text/html;charset=utf-8" ||
+              obj.contentType === "text/html" ||
+              obj.contentType === "image/svg+xml" ? (
               <iframe
                 loading="lazy"
-                width={"50%"}
+                width={"80px"}
                 height={"80px"}
                 style={{ border: "none", borderRadius: "20%" }}
                 src={`${CONTENT_API}/content/${obj.id}`}
@@ -348,10 +236,43 @@ const MyAssets = (props) => {
                 height={70}
               />
             )}
-            {obj.displayName}
+            {obj.collectionSymbol} - #{obj.inscriptionNumber}
           </Flex>
         </>
       ),
+    },
+    {
+      key: "APY",
+      title: "APY",
+      align: "center",
+      dataIndex: "APY",
+      render: (_, obj) => (
+        <Text className={"text-color-one"}>{obj.collection.APY}%</Text>
+      ),
+    },
+    {
+      key: "Term",
+      title: "Term",
+      align: "center",
+      dataIndex: "terms",
+      render: (_, obj) => (
+        <Text className={"text-color-one"}>
+          {Number(obj.collection.terms)} Days
+        </Text>
+      ),
+    },
+    {
+      key: "LTV",
+      title: "LTV",
+      align: "center",
+      dataIndex: "ltv",
+      render: (_, obj) => {
+        return (
+          <Text className={"text-color-one"}>
+            {obj?.loanToValue ? obj.collection.loanToValue : 0}%
+          </Text>
+        );
+      },
     },
     {
       key: "Floor Price",
@@ -359,43 +280,28 @@ const MyAssets = (props) => {
       align: "center",
       dataIndex: "value",
       render: (_, obj) => {
+        const floor = Number(obj.collection.floorPrice)
+          ? Number(obj.collection.floorPrice) / BTC_ZERO
+          : 25000 / BTC_ZERO;
         return (
           <>
-            {obj.collection.floorPrice ? (
-              <Flex vertical align="center">
-                <Flex
-                  align="center"
-                  gap={3}
-                  className="text-color-two font-small letter-spacing-small"
-                >
-                  <img src={Aptos} alt="noimage" width={20} height={20} />
-                  {(
-                    ((obj.collection.floorPrice / BTC_ZERO) * btcValue) /
-                    aptosvalue
-                  ).toFixed(2)}
-                </Flex>
-                <span className="text-color-one font-xsmall letter-spacing-small">
-                  ${" "}
-                  {(
-                    (Number(obj.collection.floorPrice) / BTC_ZERO) *
-                    btcValue
-                  ).toFixed(2)}
-                </span>
+            <Flex vertical align="center">
+              <Flex
+                align="center"
+                gap={3}
+                className="text-color-one font-small letter-spacing-small"
+              >
+                <img src={Aptos} alt="noimage" width={20} height={20} />
+                {parseInt(floor.toFixed(2))
+                  ? floor.toFixed(2)
+                  : floor.toFixed(4)}
               </Flex>
-            ) : (
-              "-"
-            )}
+              <span className="text-color-two font-xsmall letter-spacing-small">
+                $ {(floor * btcValue).toFixed(2)}
+              </span>
+            </Flex>
           </>
         );
-      },
-    },
-    {
-      key: "APY",
-      title: "APY",
-      align: "center",
-      dataIndex: "category_id",
-      render: (id, obj) => {
-        return <Text className="text-color-two font-small">5%</Text>;
       },
     },
     {
@@ -405,28 +311,41 @@ const MyAssets = (props) => {
       dataIndex: "link",
       render: (_, obj) => (
         <>
-          <FcApproval color="orange" size={30} />
+          {obj.isToken ? (
+            <FcApproval size={30} />
+          ) : (
+            <FcHighPriority size={30} />
+          )}
         </>
       ),
     },
     {
       key: "Action Buttons",
-      title: " ",
+      title: (
+        <Tooltip title="You can create borrow request using your minted collateral ordinals!">
+          <IoInformationCircleSharp size={25} color="#a7a700" />
+        </Tooltip>
+      ),
       align: "center",
       render: (_, obj) => {
         return (
-          <Flex gap={5}>
-            <Dropdown.Button
-              className="dbButtons-grey font-weight-600 letter-spacing-small"
-              trigger={"click"}
-              onClick={() => setHandleSupplyModal(true)}
-              menu={{
-                items: options,
-                onClick: () => setSupplyModalItems(obj),
-              }}
-            >
-              Supply
-            </Dropdown.Button>
+          <Flex gap={5} justify="center">
+            {obj.isToken ? (
+              <Text className={"text-color-one font-small"}>Minted</Text>
+            ) : (
+              <Button
+                className="dbButtons-grey font-weight-600 letter-spacing-small"
+                trigger={"click"}
+                disabled={obj.isToken}
+                onClick={() => handleTokenMint(obj)}
+                menu={{
+                  items: options,
+                  onClick: () => setSupplyModalItems(obj),
+                }}
+              >
+                Mint
+              </Button>
+            )}
           </Flex>
         );
       },
@@ -437,7 +356,7 @@ const MyAssets = (props) => {
     <>
       <Row justify={"space-between"} align={"middle"}>
         <Col>
-          <h1 className="font-xlarge gradient-text-one">My Assets</h1>
+          <h1 className="font-xlarge gradient-text-one">Bridge Ordinals</h1>
         </Col>
       </Row>
       {walletState.active.includes(XVERSE_WALLET_KEY) ||
@@ -476,13 +395,13 @@ const MyAssets = (props) => {
                     ),
                   }}
                   loading={{
-                    spinning: loadingState.isBorrowData || borrowData === null,
+                    spinning: userCollateral === null,
                     indicator: <Bars />,
                   }}
                   pagination={{ pageSize: 5 }}
                   rowKey={(e) => `${e?.id}-${e?.inscriptionNumber}`}
-                  tableColumns={AssetsToSupplyTableColumns}
-                  tableData={borrowData}
+                  tableColumns={ordinalsColumn}
+                  tableData={userCollateral}
                 />
               </Col>
             </Row>
@@ -733,110 +652,8 @@ const MyAssets = (props) => {
           />
         </Row>
       </ModalDisplay>
-
-      {/* Ask Modal */}
-      <ModalDisplay
-        width={"35%"}
-        open={askModal}
-        footer={null}
-        onCancel={handleCancel}
-        title={
-          <Row>
-            <Text style={{ color: "white", fontSize: "25px" }}>Loan Info</Text>
-          </Row>
-        }
-      >
-        <Row className="mt-20">
-          <Text className="font-small iconalignment modalBoxYellowShadow">
-            <RiInformationFill /> After the repayment, you will get the
-            inscription
-          </Text>
-        </Row>
-        <Row justify={"space-between"}>
-          <Tooltip
-            color="purple"
-            open={
-              askModalData.isApprovedCollection &&
-              askModalData.loanAmount >
-                (askModalData.floorPrice / BTC_ZERO).toFixed(8)
-            }
-            title={"Amount higher than floor price!"}
-          >
-            <Col className="mt-30 modalBoxBlackShadow">
-              <Row>
-                <Text className="color-white font-small">
-                  Enter loan amount
-                </Text>
-              </Row>
-              <Row>
-                <Input
-                  className="mt"
-                  style={{
-                    border: "none",
-                    backgroundColor: "#2a2a29 !important",
-                    fontSize: "18px",
-                  }}
-                  placeholder={
-                    askModalData.isApprovedCollection
-                      ? (askModalData.floorPrice / BTC_ZERO).toFixed(8)
-                      : (10 / aptosvalue).toFixed(8)
-                  }
-                  value={askModalData.loanAmount}
-                  maxLength={8}
-                  onChange={(e) => {
-                    if (e.target.value.match(/^[0-9.]+$/)) {
-                      handleAskModalInput(e);
-                    } else if (e.target.value === "") {
-                      handleAskModalInput(e);
-                    }
-                  }}
-                  prefix={
-                    <img src={Aptos} alt="noimage" width={15} height={15} />
-                  }
-                />
-              </Row>
-            </Col>
-          </Tooltip>
-          <Col className="mt-30 modalBoxBlackShadow">
-            <Row>
-              <Text className="color-white font-small">
-                Total Interest Amount
-              </Text>
-            </Row>
-            <Row>
-              <Input
-                readOnly
-                value={askModalData.interestAmount}
-                className="mt"
-                style={{ border: "none", fontSize: "18px" }}
-                placeholder="0"
-                prefix={
-                  <img src={Aptos} alt="noimage" width={15} height={15} />
-                }
-              />
-            </Row>
-          </Col>
-        </Row>
-        <Row className="mt">
-          <Col>
-            <Text className="color-white font-small">
-              Repayment Amount: {askModalData.repaymentAmount}
-            </Text>
-          </Col>
-        </Row>
-        <Row className="mt-20">
-          <Col sm={24}>
-            <CustomButton
-              loading={loadingState.isAskBtn}
-              className={"width font-weight-600"}
-              onClick={handleAskRequest}
-              title={"Ask Loan"}
-            />
-          </Col>
-        </Row>
-      </ModalDisplay>
     </>
   );
 };
 
-export default propsContainer(MyAssets);
+export default propsContainer(BridgeOrdinals);

@@ -6,12 +6,22 @@ const NODE_URL = "https://fullnode.devnet.aptoslabs.com"; // Replace with the ap
 export const client = new AptosClient(NODE_URL);
 // const faucetClient = new FaucetClient(NODE_URL, FAUCET_URL);
 
-export const contractAddress = "0x7b8a71405e76e1a3cccc7e9f5f01d401b466f02d7731dc753afa8a2b9ac7bc68";
-export const Module = { BORROW: "borrow" };
+export const contractAddress = "0x2ad83ec367d3f654a08b301bcbdd84d519820a1f8f1d385f6b04436983650041";
+export const Module = { ORDINALS_LOAN: "OrdinalsLoan" };
 export const Function = {
-    CREATE_MANAGER: "create_manager",
-    CREATE_BORROW_REQUEST: "create_borrow_request",
-    GET_ALL_BORROW_REQUESTS: "get_all_borrow_requests"
+    CREATE: {
+        INIT_ORDINAL: "init_ordinal",
+        CREATE_ORDINAL: "create_ordinal",
+        MINT_ORDINAL: "mint_ordinal",
+        CREATE_BORROW_REQUEST: "create_borrow_request"
+    },
+    VIEW: {
+        AVAILABLE_ORDINAL_COUNT: "available_ordinal_count",
+        GET_ORDINALS: "get_ordinals",
+        GET_BORROW_REQUEST: "get_borrow_request",
+        GET_MAX_ORDINALS: "get_max_ordinals",
+        GET_ORDINAL_DETAILS: "get_ordinal_details"
+    }
 };
 
 // Function to create a new account and fund it

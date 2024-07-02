@@ -9,10 +9,12 @@ import {
   setAgent,
   setApprovedCollection,
   setAptosValue,
+  setBorrowCollateral,
   setBtcValue,
   setCollection,
   setOffers,
   setUserAssets,
+  setUserCollateral,
 } from "../../redux/slice/constant";
 import { getAptosClient } from "../../utils/aptosClient";
 import {
@@ -27,7 +29,9 @@ import {
   MAGICEDEN_WALLET_KEY,
   UNISAT_WALLET_KEY,
   XVERSE_WALLET_KEY,
+  agentCreator,
   apiUrl,
+  aptos_canister,
   calculateAPY,
 } from "../../utils/common";
 
@@ -43,6 +47,7 @@ export const propsContainer = (Component) => {
     const aptosvalue = reduxState.constant.aptosvalue;
     const xverseAddress = reduxState.wallet.xverse.ordinals.address;
     const unisatAddress = reduxState.wallet.unisat.address;
+    const approvedCollections = reduxState.constant.approvedCollections;
     const magicEdenAddress = reduxState.wallet.magicEden.ordinals.address;
     const petraAddress = reduxState.wallet.petra.address;
     const collections = reduxState.constant.collection;
@@ -52,6 +57,12 @@ export const propsContainer = (Component) => {
     const ckEthActorAgent = reduxState.constant.ckEthActorAgent;
     const withdrawAgent = reduxState.constant.withdrawAgent;
     const userAssets = reduxState.constant.userAssets;
+
+    const address = xverseAddress
+      ? xverseAddress
+      : unisatAddress
+      ? unisatAddress
+      : magicEdenAddress;
 
     const aptosCanisterId = process.env.REACT_APP_ORDINAL_CANISTER_ID;
     const WAHEED_ADDRESS = process.env.REACT_APP_WAHEED_ADDRESS;
@@ -253,6 +264,54 @@ export const propsContainer = (Component) => {
       }
     };
 
+    const getCollaterals = async () => {
+      try {
+        const API = agentCreator(apiFactory, aptos_canister);
+        const userAssets = await API.getUserSupply(
+          IS_USER ? address : WAHEED_ADDRESS
+        );
+        const supplyData = userAssets.map((asset) => JSON.parse(asset));
+        const colResult = await getCollectionDetails(supplyData);
+        // console.log("colResult", colResult);
+        // --------------------------------------------------
+
+        const payload = {
+          type: "entry_function_payload",
+          function: `${contractAddress}::${Module.ORDINALS_LOAN}::${Function.VIEW.GET_ORDINALS}`,
+          arguments: [petraAddress],
+          type_arguments: [],
+        };
+        const [userMintedTokens] = await client.view(payload);
+        const tokens = userMintedTokens.map((token) =>
+          Number(token.identifier.inscription_number)
+        );
+        // const tokens = [];
+        // console.log("GET_ORDINALS response", tokens);
+
+        const finalData = colResult.map((asset) => {
+          let data = { ...asset, collection: {} };
+          approvedCollections.forEach((col) => {
+            if (col.symbol === asset.collectionSymbol) {
+              data = {
+                ...asset,
+                collection: col,
+                isToken: tokens.includes(asset.inscriptionNumber)
+                  ? true
+                  : false,
+              };
+            }
+          });
+          return data;
+        });
+
+        const borrowCollateral = finalData.filter((asset) => asset.isToken);
+        dispatch(setUserCollateral(finalData));
+        dispatch(setBorrowCollateral(borrowCollateral));
+      } catch (error) {
+        console.log("Collateral fetching error", error);
+      }
+    };
+
     useEffect(() => {
       (async () => {
         if (
@@ -325,25 +384,32 @@ export const propsContainer = (Component) => {
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [api_agent, dispatch]);
 
+    // useEffect(() => {
+    //   (async () => {
+    //     try {
+    //       if (petraAddress) {
+    //         const payload = {
+    //           type: "entry_function_payload",
+    //           function: `${contractAddress}::${Module.BORROW}::${Function.GET_ALL_BORROW_REQUESTS}`,
+    //           arguments: [petraAddress],
+    //           type_arguments: [],
+    //         };
+    //         const response = await client.view(payload);
+    //         console.log("response", response);
+    //         dispatch(setOffers(response[0]));
+    //       }
+    //     } catch (error) {
+    //       console.log("Failed to fetch resource:", error);
+    //     }
+    //   })();
+    // }, [dispatch, petraAddress]);
+
     useEffect(() => {
-      (async () => {
-        try {
-          if (petraAddress) {
-            const payload = {
-              type: "entry_function_payload",
-              function: `${contractAddress}::${Module.BORROW}::${Function.GET_ALL_BORROW_REQUESTS}`,
-              arguments: [petraAddress],
-              type_arguments: [],
-            };
-            const response = await client.view(payload);
-            console.log("response", response);
-            dispatch(setOffers(response[0]));
-          }
-        } catch (error) {
-          console.log("Failed to fetch resource:", error);
-        }
-      })();
-    }, [dispatch, petraAddress]);
+      if (activeWallet.length && approvedCollections[0]) {
+        getCollaterals();
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeWallet, approvedCollections]);
 
     return (
       <Component
@@ -357,6 +423,7 @@ export const propsContainer = (Component) => {
           withdrawAgent,
           ckBtcActorAgent,
           ckEthActorAgent,
+          getCollaterals,
         }}
       />
     );

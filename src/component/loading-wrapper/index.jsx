@@ -1,6 +1,6 @@
 import { Spin } from "antd";
 import { useSelector } from "react-redux";
-import bitcoin from "../../assets/coin_logo/ckbtc.png";
+import Aptos from "../../assets/wallet-logo/aptos_logo.png";
 
 const LoadingWrapper = ({ children }) => {
   const loading = useSelector((state) => state.constant.isLoading);
@@ -10,7 +10,7 @@ const LoadingWrapper = ({ children }) => {
       indicator={
         <img
           className="image"
-          src={bitcoin}
+          src={Aptos}
           alt=""
           width="60%"
           height="60%"

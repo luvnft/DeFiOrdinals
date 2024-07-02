@@ -137,19 +137,20 @@ const Lending = (props) => {
       title: "Floor",
       align: "center",
       dataIndex: "floor",
-      render: (_, obj) => (
-        <Flex align="center" vertical gap={5}>
-          <Flex align="center" vertical gap={5} className={"text-color-one"}>
-            <Flex align="center" gap={3}>
-              <img src={Aptos} alt="noimage" width="20px" />{" "}
-              {(((obj.floorPrice / BTC_ZERO) * btcvalue) / aptosvalue).toFixed(
-                2
-              )}{" "}
+      render: (_, obj) => {
+        const floor = Number(obj.floorPrice) ? Number(obj.floorPrice) : 30000;
+        return (
+          <Flex align="center" vertical gap={5}>
+            <Flex align="center" vertical gap={5} className={"text-color-one"}>
+              <Flex align="center" gap={3}>
+                <img src={Aptos} alt="noimage" width="20px" />{" "}
+                {(((floor / BTC_ZERO) * btcvalue) / aptosvalue).toFixed(2)}{" "}
+              </Flex>
+              <div>${((floor / BTC_ZERO) * btcvalue).toFixed(2)} </div>
             </Flex>
-            <div>${((obj.floorPrice / BTC_ZERO) * btcvalue).toFixed(2)} </div>
           </Flex>
-        </Flex>
-      ),
+        );
+      },
     },
     {
       key: "ActionButtons",
@@ -220,7 +221,7 @@ const Lending = (props) => {
     }
     setIsOffersModal(!isOffersModal);
   };
-  console.log("lendModalData", lendModalData);
+  // console.log("lendModalData", lendModalData);
   return (
     <>
       <Row justify={"space-between"} align={"middle"}>
