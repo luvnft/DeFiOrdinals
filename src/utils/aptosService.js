@@ -6,8 +6,8 @@ const NODE_URL = "https://fullnode.devnet.aptoslabs.com"; // Replace with the ap
 export const client = new AptosClient(NODE_URL);
 // const faucetClient = new FaucetClient(NODE_URL, FAUCET_URL);
 
-export const contractAddress = "0x2ad83ec367d3f654a08b301bcbdd84d519820a1f8f1d385f6b04436983650041";
-export const Module = { ORDINALS_LOAN: "OrdinalsLoan" };
+export const contractAddress = "0xa1860d027f7072d9df8a36123f8d86d3cda7b8632e88d3fa8546221d20be989c";
+export const Module = { ORDINALS_LOAN: "OrdinalsLoanLedger10" };
 export const Function = {
     CREATE: {
         INIT_ORDINAL: "init_ordinal",
@@ -20,7 +20,9 @@ export const Function = {
         GET_ORDINALS: "get_ordinals",
         GET_BORROW_REQUEST: "get_borrow_request",
         GET_MAX_ORDINALS: "get_max_ordinals",
-        GET_ORDINAL_DETAILS: "get_ordinal_details"
+        GET_ORDINAL_DETAILS: "get_ordinal_details",
+        GET_ALL_BORROW_REQUESTS: "get_all_borrow_requests",
+        GET_ALL_BORROWERS: "get_all_borrowers"
     }
 };
 

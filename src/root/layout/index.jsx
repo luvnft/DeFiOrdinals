@@ -127,215 +127,6 @@ const MainLayout = () => {
             {location.pathname === "/" ? (
               <>
                 <Footer className="main-bg-b-to-t" style={{ padding: "20px" }}>
-                  {/* <Row justify={"center"}>
-                    <Text className="text-color-one dash-headings letter-spacing-medium font-xxlarge font-weight-600">
-                      How it works ?
-                    </Text>
-                  </Row>
-
-                  <Row justify={"center"}>
-                    <Col xs={24} md={22}>
-                      <Carousel autoplay autoplaySpeed={3000} className="mt-30">
-                        <img src={Borrow} alt="borrow" className="flowChart" />
-                        <img src={Lend} alt="lend" className="flowChart" />
-                      </Carousel>
-                    </Col>
-                  </Row>
-
-                  <Row justify={"center"}>
-                    <Divider />
-                  </Row>
-
-                  <Row justify={"center"} className={screens.md && "mt-30"}>
-                    <Text className="text-color-one dash-headings letter-spacing-medium font-xxlarge font-weight-600">
-                      Backed By
-                    </Text>
-                  </Row>
-
-                  <Row
-                    justify={"center"}
-                    className={screens.md ? "mt-30" : "mt-15"}
-                  >
-                    <Col xs={24} md={16}>
-                      <Row
-                        justify={{ xs: "center", md: "space-around" }}
-                        align={"middle"}
-                      >
-                        <img
-                          className="pointer bounceEffect"
-                          alt="xverse-partner"
-                          src={bitcoin_backed}
-                          width={screens.md ? "300dv" : "200px"}
-                        />
-
-                        <img
-                          alt="icp-partner"
-                          className="pointer bounceEffect brandImages"
-                          src={dfinity_backed}
-                          width={screens.md ? "150dvw" : "100px"}
-                        />
-
-                        <img
-                          alt="icp-partner"
-                          className="pointer bounceEffect brandImages"
-                          src={encode}
-                          width={screens.md ? "170dvw" : "160px"}
-                        />
-                      </Row>
-                    </Col>
-                  </Row>
-
-                  <Row justify={"center"}>
-                    <Divider />
-                  </Row>
-
-                  <Row justify={"center"} className={screens.md && "mt-30"}>
-                    <Text className="text-color-one dash-headings letter-spacing-medium font-xxlarge font-weight-600">
-                      Partners
-                    </Text>
-                  </Row>
-
-                  <Row
-                    justify={"center"}
-                    className={screens.md ? "mt-30" : "mt-15"}
-                    align={"middle"}
-                  >
-                    <img
-                      className="pointer bounceEffect brandImages"
-                      alt="xverse-partner"
-                      src={xverse_partner}
-                      width={screens.md ? "210dvw" : "160px"}
-                    />
-                    <img
-                      className="pointer bounceEffect brandImages"
-                      alt="unisat_logo"
-                      src={unisat}
-                      width={screens.md ? "170dvw" : "120px"}
-                    />
-
-                    <img
-                      alt="icp-partner"
-                      className="pointer bounceEffect brandImages"
-                      src={icp_partner}
-                      width={screens.md ? "365dvw" : "320px"}
-                    />
-
-                    <img
-                      alt="icp-partner"
-                      className="pointer bounceEffect brandImages"
-                      src={juno}
-                      width={screens.md ? "265dvw" : "160px"}
-                    />
-
-                    <img
-                      alt="icp-partner"
-                      className="pointer bounceEffect brandImages"
-                      src={motokoLogo}
-                      width={screens.md ? "285dvw" : "200px"}
-                    />
-                  </Row>
-
-                  <Row justify={"center"}>
-                    <Divider />
-                  </Row>
-
-                  <Row justify={"center"} className={screens.md && "mt-30"}>
-                    <Text className="text-color-one dash-headings letter-spacing-medium font-xxlarge font-weight-600">
-                      Powered By
-                    </Text>
-                  </Row>
-
-                  <Row
-                    justify={"center"}
-                    className={screens.md ? "mt-50" : "mt-15"}
-                    align={"middle"}
-                  >
-                    <img
-                      className="pointer bounceEffect brandImages"
-                      alt="xverse-partner"
-                      src={bitcoin_poweredBy}
-                      width={screens.md ? "170dvw" : "150px"}
-                    />
-
-                    <img
-                      className="pointer bounceEffect brandImages"
-                      alt="xverse-partner"
-                      src={etherium}
-                      width={screens.md ? "170dvw" : "150px"}
-                    />
-
-                    <img
-                      alt="icp-partner"
-                      className="pointer bounceEffect brandImages"
-                      src={on_chain_poweredBy}
-                      width={screens.md ? "170dvw" : "150px"}
-                    />
-
-                    <img
-                      alt="icp-partner"
-                      className="pointer bounceEffect brandImages"
-                      src={icrc_badge}
-                      width={"230dvw"}
-                    />
-                  </Row>
-
-                  <Row justify={"center"} style={{ margin: "20px 0" }}>
-                    <Divider />
-                  </Row>
-
-                  <Row justify={"center"} className={screens.md && "mt-10"}>
-                    <Text className="text-color-one dash-headings letter-spacing-medium font-xxlarge font-weight-600">
-                      Do you know?
-                    </Text>
-                  </Row>
-
-                  <Row justify={"center"}>
-                    <Col xs={24} md={22}>
-                      <Row
-                        gutter={screens.md && 98}
-                        justify={"center"}
-                        className={screens.md ? "mt-50" : "mt-30"}
-                      >
-                        <Col>
-                          <Link
-                            className="iconalignment"
-                            target="_blank"
-                            to={CKBTC}
-                          >
-                            <Text className="gradient-text-two pointer font-large font-family-one letter-spacing-small">
-                              1. What is ckBTC?
-                            </Text>
-                            <img
-                              src={bitCoin}
-                              alt="logo"
-                              className="pointer round"
-                              width="40px"
-                              style={{ marginLeft: "10px" }}
-                            />
-                          </Link>
-                        </Col>
-                        <Col className={screens.xs && "mt-20"}>
-                          <Link
-                            className="iconalignment"
-                            target="_blank"
-                            to={CKETH}
-                          >
-                            <Text className="text-decor-line gradient-text-two pointer font-large font-family-one letter-spacing-small">
-                              2. What is ckETH?
-                            </Text>
-                            <img
-                              src={etherium}
-                              alt="logo"
-                              className="pointer round"
-                              width="40px"
-                              style={{ marginLeft: "10px" }}
-                            />
-                          </Link>
-                        </Col>
-                      </Row>
-                    </Col>
-                  </Row> */}
-
                   <Row justify={"center"} className="mt-30">
                     <Col xs={24} md={22}>
                       <Row justify={"space-between"} gutter={20}>
@@ -403,9 +194,27 @@ const MainLayout = () => {
                       <Row
                         justify={{ md: "space-between", xs: "center" }}
                         align={"middle"}
+                        style={{
+                          alignItems: "center",
+                        }}
                       >
-                        <Col xs={{ order: "2" }} md={{ order: "1" }}>
-                          <Flex justify="center" vertical>
+                        <Col
+                          xs={{ order: "2", span: 24 }}
+                          md={{ order: "1" }}
+                          lg={{ span: 8 }}
+                          className={
+                            screens.md || screens.sm || screens.xs ? "mt-7" : ""
+                          }
+                        >
+                          <Flex
+                            justify="center"
+                            align={
+                              screens.md || screens.sm || screens.xs
+                                ? "center"
+                                : ""
+                            }
+                            vertical
+                          >
                             <img
                               src={logo}
                               alt="logo"
@@ -416,7 +225,12 @@ const MainLayout = () => {
                             <Text className="gradient-text-two font-large font-family-one letter-spacing-large">
                               {businessName}
                             </Text>
-                            <Text className="gradient-text-one font-small font-family-one letter-spacing-small">
+                            <Text
+                              className={`gradient-text-one ${
+                                screens.xs ? "font-xssmall" : "font-small"
+                              } font-family-one letter-spacing-small`}
+                            >
+                              {" "}
                               {footerText}
                             </Text>
                           </Flex>
@@ -424,9 +238,14 @@ const MainLayout = () => {
 
                         <Col
                           xs={{ span: 24, order: "1" }}
-                          md={{ span: 16, order: "2" }}
-                          sm={16}
-                          lg={10}
+                          md={{ order: "2" }}
+                          sm={24}
+                          lg={{ span: 10 }}
+                          className={
+                            screens.md || screens.sm || screens.xs
+                              ? "mt-15"
+                              : ""
+                          }
                         >
                           <Flex vertical gap={15}>
                             {screens.md && (
@@ -444,39 +263,34 @@ const MainLayout = () => {
                                     </Text>
                                     <Text
                                       onClick={() => {
-                                        navigate("/myassets");
+                                        navigate("/borrowing");
                                         window.scrollTo(0, 0);
                                       }}
                                       className="text-color-two headertitle title pointer font-small letter-spacing-small"
                                     >
-                                      My Assets
+                                      Borrowing
                                     </Text>
                                     <Text
                                       onClick={() => {
-                                        navigate("/faucet");
+                                        navigate("/bridge");
                                         window.scrollTo(0, 0);
                                       }}
                                       className="text-color-two headertitle title pointer font-small letter-spacing-small"
                                     >
-                                      Faucet
-                                    </Text>
-                                    <Text
-                                      onClick={() => {
-                                        navigate("/portfolio");
-                                        window.scrollTo(0, 0);
-                                      }}
-                                      className="text-color-two headertitle title pointer font-small letter-spacing-small"
-                                    >
-                                      Portfolio
+                                      Bridge Ordinals
                                     </Text>
                                   </Flex>
                                 </Flex>
                               </Col>
                             )}
 
-                            <Row justify={"center"}>
-                              <Divider style={{ margin: 0 }} />
-                            </Row>
+                            {!screens.xs ? (
+                              <Row justify={"center"}>
+                                <Divider style={{ margin: 0 }} />
+                              </Row>
+                            ) : (
+                              ""
+                            )}
 
                             {screens.xs && (
                               <Row
@@ -537,55 +351,21 @@ const MainLayout = () => {
                                 />
                               </Text>
                             </Flex>
+                            {screens.xs ? (
+                              <Row justify={"center"}>
+                                <Divider style={{ margin: 0 }} />
+                              </Row>
+                            ) : (
+                              ""
+                            )}
                           </Flex>
                         </Col>
-
-                        {screens.md && (
-                          <Col
-                            md={{ order: "3" }}
-                            className={screens.xs && "mt-30"}
-                          >
-                            {isBroken ? (
-                              <GiRawEgg
-                                className="eggbroken pointer"
-                                color="violet"
-                                size={70}
-                              />
-                            ) : (
-                              <GiEasterEgg
-                                className={"egg  pointer"}
-                                onClick={redirectToBorrow}
-                                color="violet"
-                                size={70}
-                              />
-                            )}
-                          </Col>
-                        )}
                       </Row>
                     </Col>
                   </Row>
                 </Footer>
               </>
             ) : null}
-
-            {/* <Footer
-              className="black-bg"
-              style={{ borderTop: "1px solid #434343" }}
-            >
-              <Row justify={"center"}>
-                <Col xs={22}>
-                  <Row justify={"center"}>
-
-                    <Col>
-                      <Text className="font-medium text-color-two">
-                        {footerText}
-                      </Text>
-                    </Col>
-
-                  </Row>
-                </Col>
-              </Row>
-            </Footer> */}
             <div className="value-header">
               <Header className="header z-index">
                 <Row justify={"center"}>

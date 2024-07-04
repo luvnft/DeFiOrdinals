@@ -7,6 +7,7 @@ import Notify from "../../component/notification";
 import { apiFactory } from "../../ordinal_canister";
 import {
   setAgent,
+  setAllBorrowRequest,
   setApprovedCollection,
   setAptosValue,
   setBorrowCollateral,
@@ -282,10 +283,13 @@ export const propsContainer = (Component) => {
           type_arguments: [],
         };
         const [userMintedTokens] = await client.view(payload);
-        const tokens = userMintedTokens.map((token) =>
-          Number(token.identifier.inscription_number)
-        );
-        // const tokens = [];
+        // console.log("userMintedTokens", userMintedTokens);
+        let tokens = [];
+        if (userMintedTokens?.vec[0]?.length) {
+          tokens = userMintedTokens.vec[0].map((token) =>
+            Number(token.identifier.inscription_number)
+          );
+        }
         // console.log("GET_ORDINALS response", tokens);
 
         const finalData = colResult.map((asset) => {
@@ -305,10 +309,27 @@ export const propsContainer = (Component) => {
         });
 
         const borrowCollateral = finalData.filter((asset) => asset.isToken);
+        // console.log("borrowCollateral", borrowCollateral);
         dispatch(setUserCollateral(finalData));
         dispatch(setBorrowCollateral(borrowCollateral));
       } catch (error) {
         console.log("Collateral fetching error", error);
+      }
+    };
+
+    const getAllBorrowRequest = async () => {
+      try {
+        const payload = {
+          type: "entry_function_payload",
+          function: `${contractAddress}::${Module.ORDINALS_LOAN}::${Function.VIEW.GET_ALL_BORROW_REQUESTS}`,
+          arguments: [],
+          type_arguments: [],
+        };
+        const [borrowRequest] = await client.view(payload);
+        dispatch(setAllBorrowRequest(borrowRequest));
+        // console.log("ALL borrowRequest", borrowRequest);
+      } catch (error) {
+        console.log("Get all borrow request error", error);
       }
     };
 
@@ -359,9 +380,7 @@ export const propsContainer = (Component) => {
           //     self.findIndex((o) => o.collectionSymbol === obj.collectionSymbol)
           // );
 
-          if (testData?.length) {
-            dispatch(setUserAssets(testData));
-          }
+          dispatch(setUserAssets(testData));
         }
       })();
       // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -424,6 +443,7 @@ export const propsContainer = (Component) => {
           ckBtcActorAgent,
           ckEthActorAgent,
           getCollaterals,
+          getAllBorrowRequest,
         }}
       />
     );

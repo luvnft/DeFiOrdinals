@@ -1,5 +1,4 @@
 import { Button, Col, Divider, Flex, Row, Tooltip, Typography } from "antd";
-import { Network } from "aptos";
 import React, { useEffect, useState } from "react";
 import { FaRegSmileWink } from "react-icons/fa";
 import { FcApproval, FcHighPriority } from "react-icons/fc";
@@ -14,7 +13,7 @@ import Notify from "../../component/notification";
 import TableComponent from "../../component/table";
 import WalletConnectDisplay from "../../component/wallet-error-display";
 import { propsContainer } from "../../container/props-container";
-import { getAptosClient } from "../../utils/aptosClient";
+import { setLoading } from "../../redux/slice/constant";
 import {
   Function,
   Module,
@@ -28,7 +27,6 @@ import {
   XVERSE_WALLET_KEY,
   sliceAddress,
 } from "../../utils/common";
-import { setLoading } from "../../redux/slice/constant";
 
 const BridgeOrdinals = (props) => {
   const { getCollaterals } = props.wallet;
@@ -37,11 +35,7 @@ const BridgeOrdinals = (props) => {
 
   const walletState = reduxState.wallet;
   const btcValue = reduxState.constant.btcvalue;
-  const aptosvalue = reduxState.constant.aptosvalue;
   const userCollateral = reduxState.constant.userCollateral;
-  const approvedCollections = reduxState.constant.approvedCollections;
-  // console.log("approvedCollections", approvedCollections);
-  // console.log("userCollateral", userCollateral);
 
   const xverseAddress = walletState.xverse.ordinals.address;
   const unisatAddress = walletState.unisat.address;
@@ -112,7 +106,6 @@ const BridgeOrdinals = (props) => {
       };
 
       const [isInitTx] = await client.view(isInitPayload);
-      // console.log("isInitTx", isInitTx);
 
       let initTx;
       // Init ordinals
@@ -124,7 +117,6 @@ const BridgeOrdinals = (props) => {
           type_arguments: [],
         };
         initTx = await window.aptos.signAndSubmitTransaction(initPayload);
-        // console.log("initTx", initTx);
       }
 
       if (isInitTx.vec.length || initTx.success) {
@@ -144,7 +136,7 @@ const BridgeOrdinals = (props) => {
         const createOrdinalTx = await window.aptos.signAndSubmitTransaction(
           payload
         );
-        // console.log("createOrdinalTx", createOrdinalTx);
+
         // Mint ordinals
         if (createOrdinalTx.success) {
           const mintPayload = {
@@ -159,9 +151,12 @@ const BridgeOrdinals = (props) => {
           const mintTx = await window.aptos.signAndSubmitTransaction(
             mintPayload
           );
-          // console.log("mintTx", mintTx);
+
           if (mintTx.success) {
-            Notify("success", "Request submitted!");
+            Notify(
+              "success",
+              "Minted ordinal, you can create borrow request now!"
+            );
             getCollaterals();
             dispatch(setLoading(false));
           }
@@ -359,12 +354,25 @@ const BridgeOrdinals = (props) => {
           <h1 className="font-xlarge gradient-text-one">Bridge Ordinals</h1>
         </Col>
       </Row>
+
+      <Row justify={"space-between"} align={"middle"}>
+        <Col md={24}>
+          <Flex className="page-box" align="center" gap={3}>
+            <IoInformationCircleSharp size={25} color="#a7a700" />
+            <Text className="font-small text-color-two">
+              Your ordinal inscription has been successfully sent to our custody
+              address for secure storage!
+            </Text>
+          </Flex>
+        </Col>
+      </Row>
+
       {walletState.active.includes(XVERSE_WALLET_KEY) ||
       walletState.active.includes(UNISAT_WALLET_KEY) ||
       walletState.active.includes(MAGICEDEN_WALLET_KEY) ? (
         <Row
           justify={"space-between"}
-          className="mt-7 pad-bottom-30"
+          className="mt-40 pad-bottom-30"
           gutter={32}
         >
           <Col xl={24}>

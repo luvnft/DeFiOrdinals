@@ -687,7 +687,7 @@ const Dashboard = (props) => {
             index ===
             self.findIndex((o) => o.collectionSymbol === obj.collectionSymbol)
         );
-        console.log("uniqueData", uniqueData);
+        // console.log("uniqueData", uniqueData);
 
         uniqueData?.length ? setBorrowData(uniqueData) : setBorrowData([]);
         setLoadingState((prev) => ({ ...prev, isBorrowData: false }));

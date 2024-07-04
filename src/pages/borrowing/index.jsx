@@ -1,4 +1,3 @@
-import { Network } from "@aptos-labs/ts-sdk";
 import {
   Col,
   Collapse,
@@ -14,6 +13,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { BiSolidOffer } from "react-icons/bi";
 import { FaCaretDown } from "react-icons/fa";
 import { GoAlertFill } from "react-icons/go";
+import { IoInformationCircleSharp } from "react-icons/io5";
 import { PiPlusSquareThin } from "react-icons/pi";
 import { TbInfoSquareRounded } from "react-icons/tb";
 import { Bars } from "react-loading-icons";
@@ -26,22 +26,28 @@ import Notify from "../../component/notification";
 import OffersModal from "../../component/offers-modal";
 import TableComponent from "../../component/table";
 import { propsContainer } from "../../container/props-container";
-import { getAptosClient } from "../../utils/aptosClient";
-import { Function, Module, contractAddress } from "../../utils/aptosService";
+import {
+  Function,
+  Module,
+  client,
+  contractAddress,
+} from "../../utils/aptosService";
 import {
   PETRA_WALLET_KEY,
   calculateDailyInterestRate,
 } from "../../utils/common";
+import { setOffers } from "../../redux/slice/constant";
 
 const Borrowing = (props) => {
   const { reduxState, dispatch } = props.redux;
+  const { getAllBorrowRequest } = props.wallet;
   const approvedCollections = reduxState.constant.approvedCollections;
   const activeWallet = reduxState.wallet.active;
   const aptosvalue = reduxState.constant.aptosvalue;
   const offers = reduxState.constant.offers;
   const petraAddress = reduxState.wallet.petra.address;
   const borrowCollateral = reduxState.constant.borrowCollateral;
-  // console.log("borrowCollateral", borrowCollateral);
+  const allBorrowRequest = reduxState.constant.allBorrowRequest;
 
   const btcvalue = reduxState.constant.btcvalue;
 
@@ -60,6 +66,8 @@ const Borrowing = (props) => {
   const [isBorrowModal, setIsBorrowModal] = useState(false);
   const [borrowModalData, setBorrowModalData] = useState({});
 
+  const [collateralData, setCollateralData] = useState([]);
+
   const [collapseActiveKey, setCollapseActiveKey] = useState(["2"]);
   const [isRequestBtnLoading, setIsRequestBtnLoading] = useState(false);
   const BTC_ZERO = process.env.REACT_APP_BTC_ZERO;
@@ -70,6 +78,20 @@ const Borrowing = (props) => {
       title: "Collections",
       align: "center",
       dataIndex: "collectionName",
+      filters: [
+        {
+          text: "Collateral",
+          value: "Collateral",
+        },
+      ],
+      onFilter: (_, record) => {
+        let assets = collateralData?.filter(
+          (p) => p.collectionSymbol === record.symbol
+        );
+        if (assets.length) {
+          return record;
+        }
+      },
       render: (_, obj) => {
         const name = obj?.name;
         const nameSplitted = obj?.name?.split(" ");
@@ -143,7 +165,9 @@ const Borrowing = (props) => {
       title: "APY",
       align: "center",
       dataIndex: "APY",
-      render: (_, obj) => <Text className={"text-color-one"}>{obj.APY}%</Text>,
+      render: (_, obj) => (
+        <Text className={"text-color-one"}>{Math.round(obj.APY)}%</Text>
+      ),
     },
     {
       key: "Term",
@@ -200,7 +224,7 @@ const Borrowing = (props) => {
             size="medium"
             onClick={() => {
               // Assets
-              let assets = borrowCollateral?.filter(
+              let assets = collateralData?.filter(
                 (p) => p.collectionSymbol === obj.symbol
               );
               // Floor
@@ -272,6 +296,22 @@ const Borrowing = (props) => {
   };
   // console.log("borrowModalData", borrowModalData);
   const fetchRequests = async (obj) => {
+    if (allBorrowRequest !== null) {
+      const collectionBorrowRequests = allBorrowRequest.filter(
+        (req) => Number(req.collection_id) === Number(obj.collectionID)
+      );
+      // console.log("collectionBorrowRequests", collectionBorrowRequests);
+      dispatch(setOffers(collectionBorrowRequests));
+      toggleOfferModal();
+      setOfferModalData({
+        ...obj,
+        thumbnailURI: obj.thumbnailURI,
+        collectionName: obj.name,
+      });
+    } else {
+      Notify("info", "Please wait!");
+    }
+
     toggleOfferModal();
     setOfferModalData({
       ...obj,
@@ -280,10 +320,40 @@ const Borrowing = (props) => {
     });
   };
 
+  const fetchBorrowRequests = async () => {
+    try {
+      const promises = borrowCollateral.map((asset) => {
+        return new Promise(async (res) => {
+          const getPayload = {
+            type: "entry_function_payload",
+            function: `${contractAddress}::${Module.ORDINALS_LOAN}::${Function.VIEW.GET_BORROW_REQUEST}`,
+            arguments: [
+              petraAddress,
+              asset.collectionSymbol,
+              asset.inscriptionNumber.toString(),
+            ],
+            type_arguments: [],
+          };
+          const [ordinal] = await client.view(getPayload);
+
+          res({
+            ...asset,
+            request: ordinal.vec[0] ? ordinal.vec[0] : {},
+          });
+        });
+      });
+      const revealed = await Promise.all(promises);
+      const finalData = revealed.filter((asset) => !asset.request?.borrower);
+      setCollateralData(finalData);
+    } catch (error) {
+      console.log("request fetching error", error);
+    }
+  };
+
   useEffect(() => {
     // For setting user assets, after fetching user Assets when modal is open
     if (borrowCollateral?.length && borrowModalData?.symbol) {
-      let assets = borrowCollateral?.filter(
+      let assets = collateralData?.filter(
         (p) => p.collectionSymbol === borrowModalData.symbol
       );
       setBorrowModalData({
@@ -292,7 +362,21 @@ const Borrowing = (props) => {
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [borrowCollateral]);
+  }, [collateralData]);
+
+  useEffect(() => {
+    if (activeWallet.length && borrowCollateral?.length) {
+      fetchBorrowRequests();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeWallet, borrowCollateral]);
+
+  useEffect(() => {
+    if (activeWallet.length && borrowCollateral?.length) {
+      getAllBorrowRequest();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeWallet, borrowCollateral]);
 
   const handleCreateRequest = async () => {
     const collateral = borrowModalData.collateral;
@@ -300,8 +384,9 @@ const Borrowing = (props) => {
       setIsRequestBtnLoading(true);
       try {
         const repayment =
-          (Number(borrowModalData.interest) + borrowModalData.amount) *
+          (Number(borrowModalData.interest) + Number(borrowModalData.amount)) *
           BTC_ZERO;
+        const platformFee = Number(borrowModalData.platformFee) * BTC_ZERO;
         const payload = {
           type: "entry_function_payload",
           function: `${contractAddress}::${Module.ORDINALS_LOAN}::${Function.CREATE.CREATE_BORROW_REQUEST}`,
@@ -311,8 +396,9 @@ const Borrowing = (props) => {
             Math.round(borrowModalData.amount * BTC_ZERO),
             Math.round(repayment),
             borrowModalData.terms,
-            collateral.inscriptionNumber,
-            Number(borrowModalData.platformFee) * BTC_ZERO,
+            Math.round(platformFee),
+            Number(borrowModalData.collectionID),
+            collateral.id,
           ],
           type_arguments: [],
         };
@@ -320,9 +406,11 @@ const Borrowing = (props) => {
         const transaction = await window.aptos.signAndSubmitTransaction(
           payload
         );
-        // console.log("transaction", transaction);
+
         if (transaction.success) {
           toggleBorrowModal();
+          fetchBorrowRequests();
+          getAllBorrowRequest();
           Notify("success", "Request submitted!");
           setIsRequestBtnLoading(false);
         }
@@ -345,7 +433,7 @@ const Borrowing = (props) => {
   const toggleLendModal = () => {
     setIsLendModal(!isLendModal);
   };
-
+  // console.log("borrowModalData", borrowModalData);
   return (
     <>
       <Row justify={"space-between"} align={"middle"}>
@@ -354,7 +442,19 @@ const Borrowing = (props) => {
         </Col>
       </Row>
 
-      <Row justify={"center"} className="m-bottom">
+      <Row justify={"space-between"} align={"middle"}>
+        <Col md={24}>
+          <Flex className="page-box" align="center" gap={3}>
+            <IoInformationCircleSharp size={25} color="#a7a700" />
+            <Text className="font-small text-color-two">
+              Your minted bridge collateral will be displayed when creating a
+              borrow request.
+            </Text>
+          </Flex>
+        </Col>
+      </Row>
+
+      <Row justify={"center"} className="mt-40">
         <Col
           md={24}
           style={{
@@ -1020,7 +1120,8 @@ const Borrowing = (props) => {
       </ModalDisplay>
 
       <LendModal
-        isLendEdit={"nope"}
+        btcvalue={btcvalue}
+        aptosvalue={aptosvalue}
         modalState={isLendModal}
         lendModalData={lendModalData}
         toggleLendModal={toggleLendModal}
@@ -1030,13 +1131,15 @@ const Borrowing = (props) => {
       />
 
       <OffersModal
-        userAssets={borrowCollateral}
+        btcvalue={btcvalue}
+        aptosvalue={aptosvalue}
         modalState={isOffersModal}
+        userAssets={borrowCollateral}
         offerModalData={offerModalData}
         toggleOfferModal={toggleOfferModal}
-        toggleLendModal={toggleBorrowModal}
+        toggleLendModal={toggleLendModal}
         setOfferModalData={setOfferModalData}
-        setBorrowModalData={setBorrowModalData}
+        setLendModalData={setLendModalData}
       />
     </>
   );

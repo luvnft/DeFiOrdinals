@@ -525,7 +525,7 @@ const Nav = (props) => {
     return () => {
       window.removeEventListener("resize", getScreenDimensions);
     };
-  });
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -619,6 +619,17 @@ const Nav = (props) => {
     ),
     getItem(
       <Row
+        className="font-style"
+        onClick={() => {
+          navigate("/borrowing");
+          setOpen(false);
+        }}
+      >
+        Borrowing
+      </Row>
+    ),
+    getItem(
+      <Row
         className="font-style "
         onClick={() => {
           navigate("/bridge");
@@ -632,58 +643,11 @@ const Nav = (props) => {
       <Row
         className="font-style"
         onClick={() => {
-          navigate("/staking");
-          setOpen(false);
-        }}
-      >
-        Staking
-      </Row>
-    ),
-    getItem(
-      <Row
-        className="font-style"
-        onClick={() => {
-          navigate("/airdrop");
-          setOpen(false);
-        }}
-      >
-        Air Drop
-      </Row>
-    ),
-    getItem(
-      <Row
-        className="font-style"
-        onClick={() => {
           navigate("/portfolio");
           setOpen(false);
         }}
       >
         Portfolio
-      </Row>
-    ),
-  ];
-
-  const optionsXs = [
-    getItem(
-      <Row
-        className="font-style"
-        onClick={() => {
-          navigate("/");
-          setOpen(false);
-        }}
-      >
-        Browse
-      </Row>
-    ),
-    getItem(
-      <Row
-        className="font-style"
-        onClick={() => {
-          navigate("/lending");
-          setOpen(false);
-        }}
-      >
-        Lending
       </Row>
     ),
   ];
@@ -827,7 +791,7 @@ const Nav = (props) => {
                 >
                   Bridge Ordinals
                 </Text>
-                <Text className="font-xsmall color-grey">|</Text>
+                {/* <Text className="font-xsmall color-grey">|</Text>
                 <Text
                   className={`${
                     location.pathname.includes("faucet")
@@ -841,7 +805,7 @@ const Nav = (props) => {
                   ref={ref4}
                 >
                   Faucet
-                </Text>
+                </Text> */}
                 <Text className="font-xsmall color-grey">|</Text>
                 <Text
                   className={`${
@@ -878,26 +842,19 @@ const Nav = (props) => {
                   onClick={showDrawer}
                   justify="space-evenly"
                 >
-                  {avatarRenderer(45)}
-                  {screenDimensions.width > 767 && (
-                    <>
-                      <Text className="text-color-two font-weight-600">
-                        {xverseAddress ? (
-                          <>{sliceAddress(xverseAddress, 5)}</>
-                        ) : unisatAddress ? (
-                          <>{sliceAddress(unisatAddress, 5)}</>
-                        ) : magicEdenAddress ? (
-                          <>{sliceAddress(magicEdenAddress, 5)}</>
-                        ) : petraAddress ? (
-                          <>{sliceAddress(petraAddress, 5)}</>
-                        ) : nightlyAddress ? (
-                          <>{sliceAddress(nightlyAddress, 5)}</>
-                        ) : (
-                          <>{sliceAddress(martinAddress, 5)}</>
-                        )}
-                      </Text>
-                      <FaAngleDown color="white" size={20} />
-                    </>
+                  {screenDimensions.width > 767 ? (
+                    <>{avatarRenderer(45)}</>
+                  ) : (
+                    <label class="hamburger">
+                      <input type="checkbox" checked={open} />
+                      <svg viewBox="0 0 32 32">
+                        <path
+                          class="line line-top-bottom"
+                          d="M27 10 13 10C10.8 10 9 8.2 9 6 9 3.5 10.8 2 13 2 15.2 2 17 3.8 17 6L17 26C17 28.2 18.8 30 21 30 23.2 30 25 28.2 25 26 25 23.8 23.2 22 21 22L7 22"
+                        ></path>
+                        <path class="line" d="M7 16 27 16"></path>
+                      </svg>
+                    </label>
                   )}
                 </Flex>
               </Col>
@@ -1312,9 +1269,9 @@ const Nav = (props) => {
                 defaultOpenKeys={["sub1"]}
                 selectedKeys={[current]}
                 mode="inline"
-                items={breakPoint.xs ? optionsXs : options}
+                items={options}
               />
-              {screenDimensions.width < 992 && (
+              {/* {screenDimensions.width < 992 && (
                 <Row style={{ padding: " 0px 24px", marginTop: "10px" }}>
                   <Col>
                     <Loading
@@ -1347,42 +1304,7 @@ const Nav = (props) => {
                     </Loading>
                   </Col>
                 </Row>
-              )}
-
-              {screenDimensions.width < 992 && (
-                <Row style={{ padding: " 0px 24px", marginTop: "20px" }}>
-                  <Col>
-                    <Loading
-                      spin={!constantState.ethvalue}
-                      indicator={
-                        <TailSpin
-                          stroke="#6a85f1"
-                          alignmentBaseline="central"
-                        />
-                      }
-                    >
-                      {constantState.ethvalue ? (
-                        <Flex gap={5}>
-                          <Text className="gradient-text-one font-small heading-one">
-                            ETH
-                          </Text>
-                          <img
-                            src={Eth}
-                            alt="noimage"
-                            style={{ justifyContent: "center" }}
-                            width="35dvw"
-                          />{" "}
-                          <Text className="gradient-text-one font-small heading-one">
-                            $ {constantState.ethvalue}
-                          </Text>
-                        </Flex>
-                      ) : (
-                        ""
-                      )}
-                    </Loading>
-                  </Col>
-                </Row>
-              )}
+              )} */}
             </>
           )}
         </>

@@ -50,8 +50,8 @@ const Footer = (props) => {
                   src={Aptos}
                   alt="noimage"
                   style={{ justifyContent: "center" }}
-                  width={"25px"}
-                  height={"25px"}
+                  width={"20px"}
+                  height={"20px"}
                 />
                 <Text
                   className={`gradient-text-one ${
@@ -105,8 +105,8 @@ const Footer = (props) => {
               src={Bitcoin_Orange}
               alt="noimage"
               style={{ justifyContent: "center" }}
-              width={"25px"}
-              height={"25px"}
+              width={"23px"}
+              height={"23px"}
             />
             <Text className="gradient-text-one font-size-20 heading-one">
               {unisatBtcBalance ? (

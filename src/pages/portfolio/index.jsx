@@ -1,84 +1,68 @@
 import {
-  Badge,
   Col,
-  Descriptions,
   Divider,
+  Dropdown,
   Flex,
   Grid,
   Radio,
   Row,
-  Tooltip,
   Typography,
 } from "antd";
-import Title from "antd/es/typography/Title";
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { BiSolidSpreadsheet } from "react-icons/bi";
-import { FaHandHolding, FaMoneyBillAlt, FaRegSmileWink } from "react-icons/fa";
-import { FcInfo } from "react-icons/fc";
+import { FaHandHolding, FaMoneyBillAlt } from "react-icons/fa";
+import { FcApproval, FcInfo } from "react-icons/fc";
 import { FiArrowDownLeft } from "react-icons/fi";
 import { HiMiniReceiptPercent } from "react-icons/hi2";
-import { ImSad } from "react-icons/im";
-import { LiaExternalLinkAltSolid } from "react-icons/lia";
-import { MdDeleteForever, MdTour } from "react-icons/md";
-import { TbEdit } from "react-icons/tb";
-import { Bars } from "react-loading-icons";
-import CardDisplay from "../../component/card";
-import WalletUI from "../../component/download-wallets-UI";
-import Loading from "../../component/loading-wrapper/secondary-loader";
-import ModalDisplay from "../../component/modal";
+import { MdTour } from "react-icons/md";
 import Aptos from "../../assets/wallet-logo/aptos_logo.png";
-import Notify from "../../component/notification";
+import WalletUI from "../../component/download-wallets-UI";
+import ModalDisplay from "../../component/modal";
 import { propsContainer } from "../../container/props-container";
-import { setLoading } from "../../redux/slice/constant";
 import {
   API_METHODS,
-  BTCWallets,
   IS_USER,
   MAGICEDEN_WALLET_KEY,
-  MARTIN_WALLET_KEY,
-  NIGHTLY_WALLET_KEY,
-  PETRA_WALLET_KEY,
   UNISAT_WALLET_KEY,
   XVERSE_WALLET_KEY,
   apiUrl,
 } from "../../utils/common";
+import TableComponent from "../../component/table";
+import { Bars } from "react-loading-icons";
+import CustomButton from "../../component/Button";
 
 const Portfolio = (props) => {
   const { api_agent } = props.wallet;
   const { reduxState, dispatch } = props.redux;
   const activeWallet = reduxState.wallet.active;
-  const xverseWallet = reduxState.wallet.xverse;
-  const unisatWallet = reduxState.wallet.unisat;
-  const magicEdenWallet = reduxState.wallet.magicEden;
+  const userAssets = reduxState.constant.userAssets;
+  // const xverseWallet = reduxState.wallet.xverse;
+  // const unisatWallet = reduxState.wallet.unisat;
+  // const magicEdenWallet = reduxState.wallet.magicEden;
   const walletState = reduxState.wallet;
+  const btcValue = reduxState.constant.btcvalue;
   const xverseAddress = walletState.xverse.ordinals.address;
   const unisatAddress = walletState.unisat.address;
   const magicEdenAddress = walletState.magicEden.ordinals.address;
-  const petraAddress = walletState.petra.address;
-  const martinAddress = walletState.martin.address;
-  const nightltAddress = walletState.nightly.address;
+  // const petraAddress = walletState.petra.address;
+  // const martinAddress = walletState.martin.address;
+  // const nightltAddress = walletState.nightly.address;
   const dashboardData = reduxState.constant.dashboardData;
 
   const { Text } = Typography;
   const { useBreakpoint } = Grid;
-  const breakPoint = useBreakpoint();
-  const [copy, setCopy] = useState("Copy");
-  const [isIcon, setIcon] = useState(false);
-  const [imageUrl, setImageUrl] = useState({});
-  const [imageType, setImageType] = useState({});
-  const [borrowData, setBorrowData] = useState(null);
-  const [isPopupOpen, setPopupOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [handleSupplyModal, setHandleSupplyModal] = useState(false);
+  const [supplyModalItems, setSupplyModalItems] = useState(null);
   const [radioBtn, setRadioBtn] = useState("Assets");
   const [downloadWalletModal, setDownloadWalletModal] = useState(false);
-  const [isDeleteIcon, setDeleteIcon] = useState(false);
-  const [lendRequests, setLendRequests] = useState(null);
   const [enableTour, setEnableTour] = useState(false);
 
-  const WAHEED_ADDRESS = process.env.REACT_APP_WAHEED_ADDRESS;
   const TOUR_SVG = process.env.REACT_APP_TOUR_SVG;
   const TOUR_ID = process.env.REACT_APP_TOUR_ID;
-  const ASSET_SERVER = process.env.REACT_APP_ASSET_SERVER;
+  const CONTENT_API = process.env.REACT_APP_ORDINALS_CONTENT_API;
+  const BTC_ZERO = process.env.REACT_APP_BTC_ZERO;
 
   const handleTour = () => {
     localStorage.setItem("isTourEnabled", true);
@@ -118,174 +102,162 @@ const Portfolio = (props) => {
     },
   ];
 
-  const deleteLoanRequest = async (inscriptionId) => {
-    try {
-      dispatch(setLoading(true));
-      const deleteRequest = await api_agent.removeLoanRequest(inscriptionId);
-      dispatch(setLoading(false));
-      if (deleteRequest) {
-        Notify("success", "Deleted loan request succcessfully");
-        const remainingData = lendRequests.filter(
-          (data) => data.inscriptionid !== inscriptionId
-        );
-        setLendRequests(remainingData);
-      }
-    } catch (error) {
-      Notify("error", error.message);
-    }
-  };
+  const options = [
+    {
+      key: "1",
+      label: (
+        <CustomButton
+          className={"click-btn font-weight-600 letter-spacing-small"}
+          title={"Details"}
+          size="medium"
+          onClick={() => setIsModalOpen(true)}
+        />
+      ),
+    },
+  ];
 
-  useEffect(() => {
-    (async () => {
-      if (
-        api_agent &&
-        (activeWallet.includes(XVERSE_WALLET_KEY) ||
-          activeWallet.includes(UNISAT_WALLET_KEY) ||
-          activeWallet.includes(MAGICEDEN_WALLET_KEY))
-      ) {
-        try {
-          const result = await API_METHODS.get(
-            `${apiUrl.Asset_server_base_url}/api/v1/fetch/assets/${
-              IS_USER
-                ? xverseAddress
-                  ? xverseAddress
-                  : unisatAddress
-                  ? unisatAddress
-                  : magicEdenAddress
-                : WAHEED_ADDRESS
-            }`
-          );
-          if (result.data.data.length) {
-            const filteredData = result.data.data.filter(
-              (asset) =>
-                asset.mimeType === "text/html" ||
-                asset.mimeType === "image/webp" ||
-                asset.mimeType === "image/jpeg" ||
-                asset.mimeType === "image/png"
-            );
-            const isFromApprovedAssets = filteredData.map(async (asset) => {
-              return new Promise(async (resolve, _) => {
-                const result = await axios.get(
-                  `${ASSET_SERVER}/api/v1/fetch/asset/${asset.id}`
-                );
-                resolve({
-                  ...result.data,
-                  ...asset,
-                });
-              });
-            });
-            const revealedPromise = await Promise.all(isFromApprovedAssets);
-            const finalAssets = revealedPromise.filter(
-              (asset) => asset.success
-            );
-            const fetchCollectionDetails = finalAssets.map(async (asset) => {
-              return new Promise(async (resolve, _) => {
-                const result = await axios.get(
-                  `${ASSET_SERVER}/api/v1/fetch/collection/${asset.data.collectionName}`
-                );
-                resolve({
-                  ...result.data.data,
-                  ...asset,
-                });
-              });
-            });
-            const finalPromise = await Promise.all(fetchCollectionDetails);
-            finalPromise?.length
-              ? setBorrowData(finalPromise)
-              : setBorrowData([]);
-            // setBorrowData(finalPromise);
-          }
-        } catch (error) {
-          setBorrowData([]);
-        }
-      }
-    })();
-  }, [
-    ASSET_SERVER,
-    WAHEED_ADDRESS,
-    activeWallet,
-    api_agent,
-    dispatch,
-    magicEdenAddress,
-    unisatAddress,
-    xverseAddress,
-  ]);
+  const assetTableColumns = [
+    {
+      key: "Asset",
+      title: "Asset",
+      align: "center",
+      dataIndex: "asset",
+      render: (_, obj) => (
+        <>
+          <Flex gap={5} vertical align="center">
+            {obj.contentType === "image/webp" ||
+            obj.contentType === "image/jpeg" ||
+            obj.contentType === "image/png" ? (
+              <img
+                src={`${CONTENT_API}/content/${obj.id}`}
+                alt={`${obj.id}-borrow_image`}
+                className="border-radius-30"
+                width={70}
+                height={70}
+              />
+            ) : obj.contentType === "image/svg" ||
+              obj.contentType === "text/html;charset=utf-8" ||
+              obj.contentType === "text/html" ||
+              obj.contentType === "image/svg+xml" ? (
+              <iframe
+                loading="lazy"
+                width={"80px"}
+                height={"80px"}
+                style={{ border: "none", borderRadius: "20%" }}
+                src={`${CONTENT_API}/content/${obj.id}`}
+                title="svg"
+                sandbox="allow-scripts"
+              >
+                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                  <image href={`${CONTENT_API}/content/${obj.id}`} />
+                </svg>
+              </iframe>
+            ) : (
+              <img
+                src={`${
+                  obj?.meta?.collection_page_img_url
+                    ? obj?.meta?.collection_page_img_url
+                    : `${process.env.PUBLIC_URL}/collections/${obj?.collectionSymbol}`
+                }`}
+                // NatBoys
+                // src={`https://ipfs.io/ipfs/QmdQboXbkTdwEa2xPkzLsCmXmgzzQg3WCxWFEnSvbnqKJr/1842.png`}
+                // src={`${process.env.PUBLIC_URL}/collections/${obj?.collectionSymbol}.png`}
+                onError={(e) =>
+                  (e.target.src = `${process.env.PUBLIC_URL}/collections/${obj?.collectionSymbol}.png`)
+                }
+                alt={`${obj.id}-borrow_image`}
+                className="border-radius-30"
+                width={70}
+                height={70}
+              />
+            )}
+            {obj.displayName}
+          </Flex>
+        </>
+      ),
+    },
+    {
+      key: "Floor Price",
+      title: "Floor price",
+      align: "center",
+      dataIndex: "value",
+      render: (_, obj) => {
+        return (
+          <>
+            {obj.collection.floorPrice ? (
+              <Flex vertical align="center">
+                <Flex
+                  align="center"
+                  gap={3}
+                  className="text-color-one font-small letter-spacing-small"
+                >
+                  <img src={Aptos} alt="noimage" width={20} height={20} />
+                  {(obj.collection.floorPrice / BTC_ZERO).toFixed(2)}
+                </Flex>
+                <span className="text-color-two font-xsmall letter-spacing-small">
+                  ${" "}
+                  {(
+                    (Number(obj.collection.floorPrice) / BTC_ZERO) *
+                    btcValue
+                  ).toFixed(2)}
+                </span>
+              </Flex>
+            ) : (
+              "-"
+            )}
+          </>
+        );
+      },
+    },
+    {
+      key: "APY",
+      title: "APY",
+      align: "center",
+      dataIndex: "category_id",
+      render: (id, obj) => {
+        return <Text className="text-color-two font-small">5%</Text>;
+      },
+    },
+    {
+      key: "Can be collateral",
+      title: "Can be collateral",
+      align: "center",
+      dataIndex: "link",
+      render: (_, obj) => (
+        <>
+          <FcApproval color="orange" size={30} />
+        </>
+      ),
+    },
+    {
+      key: "Action Buttons",
+      title: " ",
+      align: "center",
+      render: (_, obj) => {
+        return (
+          <Flex gap={5}>
+            <Dropdown.Button
+              className="dbButtons-grey font-weight-600 letter-spacing-small"
+              trigger={"click"}
+              onClick={() => setHandleSupplyModal(true)}
+              menu={{
+                items: options,
+                onClick: () => setSupplyModalItems(obj),
+              }}
+            >
+              Supply
+            </Dropdown.Button>
+          </Flex>
+        );
+      },
+    },
+  ];
 
   useEffect(() => {
     if (activeWallet.length === 0) {
-      setBorrowData(null);
+      // setBorrowData(null);
     }
   }, [activeWallet]);
-
-  const renderWalletAddress = (address) => (
-    <>
-      {address ? (
-        <>
-          <Tooltip arrow title={copy} trigger={"hover"} placement="top">
-            <Text
-              onClick={() => {
-                navigator.clipboard.writeText(address);
-                setCopy("Copied");
-                setTimeout(() => {
-                  setCopy("Copy");
-                }, 2000);
-              }}
-              className="font-weight-600 letter-spacing-small font-medium text-color-two"
-            >
-              {address.slice(0, 9)}...
-              {address.slice(address.length - 9, address.length)}
-            </Text>
-          </Tooltip>
-        </>
-      ) : (
-        <Text className="font-weight-600 letter-spacing-small font-medium text-color-two">
-          ---
-        </Text>
-      )}
-    </>
-  );
-
-  const walletItems = (wallet) => {
-    return [
-      {
-        label: (
-          <>
-            <Badge
-              color={activeWallet.includes(wallet) ? "green" : "red"}
-              status={activeWallet.includes(wallet) ? "processing" : "error"}
-              text={
-                <Text className="font-weight-600 letter-spacing-small font-medium text-color-one">
-                  {wallet.toUpperCase()} WALLET
-                </Text>
-              }
-            />
-          </>
-        ),
-        key: wallet,
-        children: (
-          <Row justify={"center"}>
-            <Col className="m-bottom">
-              {wallet === XVERSE_WALLET_KEY ? (
-                <>{renderWalletAddress(xverseAddress)}</>
-              ) : wallet === UNISAT_WALLET_KEY ? (
-                <>{renderWalletAddress(unisatAddress)}</>
-              ) : wallet === MAGICEDEN_WALLET_KEY ? (
-                <>{renderWalletAddress(magicEdenAddress)}</>
-              ) : wallet === PETRA_WALLET_KEY ? (
-                <>{renderWalletAddress(petraAddress)}</>
-              ) : wallet === MARTIN_WALLET_KEY ? (
-                <>{renderWalletAddress(martinAddress)}</>
-              ) : wallet === NIGHTLY_WALLET_KEY ? (
-                <>{renderWalletAddress(nightltAddress)}</>
-              ) : (
-                <>{renderWalletAddress(petraAddress)}</>
-              )}
-            </Col>
-          </Row>
-        ),
-      },
-    ];
-  };
 
   const radioOptions = [
     {
@@ -358,8 +330,8 @@ const Portfolio = (props) => {
       </Row>
 
       <Row align={"middle"} className={activeWallet.length && "mt-15"}>
-        <Col>
-          <Flex align="center" gap={5}>
+        <Col md={24}>
+          <Flex className="page-box" align="center" gap={5}>
             <FcInfo className="pointer" size={20} />
             <Text className="text-color-two font-small">
               Manage your offers, lending, and borrowing positions. Learn more.{" "}
@@ -370,7 +342,7 @@ const Portfolio = (props) => {
 
       {activeWallet.length ? (
         // && Object.keys(dashboardData).length
-        <Row justify={"space-between"} gutter={12} className="mt-15">
+        <Row justify={"space-between"} gutter={12} className="mt-20">
           {portfolioCards.map((card, index) => {
             const { icon: Icon, title, value } = card;
             return (
@@ -390,7 +362,7 @@ const Portfolio = (props) => {
                       size={25}
                       color="grey"
                       style={{
-                        marginTop: "-13px",
+                        marginTop: index === 0 ? "-13px" : "",
                       }}
                     />
                   </Flex>
@@ -433,6 +405,38 @@ const Portfolio = (props) => {
           buttonStyle="solid"
           optionType="button"
         />
+      </Row>
+
+      <Row
+        className="mt-15"
+        justify={!activeWallet.length ? "center" : "start"}
+      >
+        <Col md={!activeWallet.length ? "" : 24}>
+          {!activeWallet.length ? (
+            <Text className="text-color-one font-medium">Connect wallet!</Text>
+          ) : radioBtn === "Assets" ? (
+            <Row className="mt-20 pad-bottom-30" gutter={32}>
+              <Col xl={24}>
+                <Row className="m-bottom">
+                  <Col xl={24}>
+                    <TableComponent
+                      loading={{
+                        spinning: userAssets === null,
+                        indicator: <Bars />,
+                      }}
+                      pagination={{ pageSize: 5 }}
+                      rowKey={(e) => `${e?.id}-${e?.inscriptionNumber}`}
+                      tableColumns={assetTableColumns}
+                      tableData={userAssets}
+                    />
+                  </Col>
+                </Row>
+              </Col>
+            </Row>
+          ) : (
+            ""
+          )}
+        </Col>
       </Row>
 
       <ModalDisplay

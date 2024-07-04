@@ -1,24 +1,30 @@
 import { Col, Flex, Row, Typography } from "antd";
 import Bars from "react-loading-icons/dist/esm/components/bars";
 import { useSelector } from "react-redux";
-import ckBtc from "../../assets/coin_logo/ckbtc.png";
-import { getTimeAgo } from "../../utils/common";
+import Aptos from "../../assets/wallet-logo/aptos_logo.png";
+import { DateTimeConverter, getTimeAgo } from "../../utils/common";
 import CustomButton from "../Button";
 import ModalDisplay from "../modal";
 import TableComponent from "../table";
 
 const OffersModal = ({
+  btcvalue,
   userAssets,
+  aptosvalue,
   modalState,
   offerModalData,
   toggleOfferModal,
   toggleLendModal,
-  setBorrowModalData,
+  setLendModalData,
 }) => {
   const { Text } = Typography;
   const state = useSelector((state) => state);
   const offers = state.constant.offers;
   const userOffers = state.constant.userOffers;
+
+  const BTC_ZERO = process.env.REACT_APP_BTC_ZERO;
+
+  // console.log("offers", offers);
 
   const activeOffersColumns = [
     {
@@ -32,7 +38,8 @@ const OffersModal = ({
           align="center"
           className={`text-color-one font-size-16 letter-spacing-small`}
         >
-          <img src={ckBtc} alt="noimage" width="20px" /> {obj.loanAmount}
+          <img src={Aptos} alt="noimage" width="20px" />{" "}
+          {(obj.loan_amount / BTC_ZERO).toFixed(2)}
         </Flex>
       ),
     },
@@ -42,9 +49,21 @@ const OffersModal = ({
       align: "center",
       dataIndex: "loanToValue",
       render: (_, obj) => {
+        // console.log("Number(obj.loan_amount)", Number(obj.loan_amount));
+        // console.log(
+        //   "Number(offerModalData.floorPrice)",
+        //   Number(offerModalData.floorPrice)
+        // );
+        const floor =
+          ((Number(offerModalData.floorPrice) / BTC_ZERO) * btcvalue) /
+          aptosvalue;
+        const LTV = (
+          (Number(obj.loan_amount) / BTC_ZERO / floor) *
+          100
+        ).toFixed(2);
         return (
           <Text className={`text-color-one font-size-16 letter-spacing-small`}>
-            {obj.loanToValue}%
+            {Math.round(LTV)}%
           </Text>
         );
       },
@@ -54,11 +73,23 @@ const OffersModal = ({
       title: "Date",
       align: "center",
       dataIndex: "loanTime",
-      render: (_, obj) => (
-        <Text className={`text-color-one font-size-16 letter-spacing-small`}>
-          {getTimeAgo(Number(obj.loanTime) / 1000000)}
-        </Text>
-      ),
+      render: (_, obj) => {
+        const [date, time] = DateTimeConverter(Number(obj.timestamp) * 1000);
+        return (
+          <Flex vertical gap={3}>
+            <Text
+              className={`text-color-one font-size-16 letter-spacing-small`}
+            >
+              {date}
+            </Text>
+            <Text
+              className={`text-color-one font-size-16 letter-spacing-small`}
+            >
+              {getTimeAgo(Number(obj.timestamp) * 1000)}
+            </Text>
+          </Flex>
+        );
+      },
     },
   ];
   // console.log("offerModalData", offerModalData);
@@ -128,26 +159,25 @@ const OffersModal = ({
                               <span
                                 className={`text-color-one font-weight-600 pointer iconalignment font-size-16`}
                               >
-                                Borrow
+                                Lend
                               </span>
                             </Flex>
                           }
                           onClick={() => {
-                            let assets = [];
-                            if (userAssets) {
-                              assets = userAssets.filter(
-                                (asset) =>
-                                  asset.collectionName ===
-                                  offerModalData.collectionName
-                              );
-                            }
+                            const floor =
+                              ((Number(offerModalData.floorPrice) / BTC_ZERO) *
+                                btcvalue) /
+                              aptosvalue;
+                            const LTV = (
+                              (Number(obj.loan_amount) / BTC_ZERO / floor) *
+                              100
+                            ).toFixed(2);
                             toggleOfferModal();
                             toggleLendModal();
-                            setBorrowModalData({
+                            setLendModalData({
                               ...obj,
-                              assets,
-                              collateral: "",
-                              canisterId: obj.canister,
+                              ...offerModalData,
+                              LTV: Math.round(LTV),
                               thumbnailURI: offerModalData.thumbnailURI,
                               collectionName: offerModalData.collectionName,
                             });
