@@ -1,4 +1,4 @@
-module my_ordinals_loan::borrow_request_contract {
+module my_ordinals_loan20::borrow_request_contract {
     use std::signer;
     use std::vector;
     use std::string;
@@ -55,7 +55,7 @@ module my_ordinals_loan::borrow_request_contract {
     }
 
     fun get_marketplace_signer_addr(): address {
-        object::create_object_address(&@my_ordinals_loan, APP_OBJECT_SEED)
+        object::create_object_address(&@my_ordinals_loan20, APP_OBJECT_SEED)
     }
 
     fun get_marketplace_signer(marketplace_signer_addr: address): signer acquires MarketplaceSigner {
