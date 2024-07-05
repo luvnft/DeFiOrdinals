@@ -1,0 +1,17 @@
+[package]
+name = "My_Ordinals_Loan"
+version = "0.1.0"
+upgrade_policy = "compatible"
+
+
+[addresses]
+my_ordinals_loan = "0xd1fcc28c840a9a9a7422fc5777a84583a1264b761afd9dba52c1d0a1425864c4"
+
+[dependencies]
+AptosFramework = { git = "https://github.com/aptos-labs/aptos-core.git", subdir = "aptos-move/framework/aptos-framework", rev = "testnet" }
+
+
+[dependencies.AptosTokenObjects]
+git = 'https://github.com/aptos-labs/aptos-core.git'
+rev = 'main'
+subdir = 'aptos-move/framework/aptos-token-objects'

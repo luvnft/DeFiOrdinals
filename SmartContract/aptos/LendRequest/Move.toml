@@ -1,0 +1,10 @@
+[package]
+name = "AptosMyOrdinalsLoan200"
+version = "0.1.0"
+upgrade_policy = "compatible"
+
+[addresses]
+AptosMyOrdinalsLoan200 = "0xad52aaf75c89f2b8ce78d562c86acd9c3f2c9582ce1e821df4c912d4a243ac90"
+
+[dependencies]
+AptosFramework = { git = "https://github.com/aptos-labs/aptos-core.git", subdir = "aptos-move/framework/aptos-framework", rev = "testnet" }
