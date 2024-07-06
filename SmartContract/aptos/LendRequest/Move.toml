@@ -1,10 +1,30 @@
 [package]
-name = "AptosMyOrdinalsLoan200"
+name = "My_Ordinals_Loan10"
 version = "0.1.0"
 upgrade_policy = "compatible"
 
+
 [addresses]
-AptosMyOrdinalsLoan200 = "0xad52aaf75c89f2b8ce78d562c86acd9c3f2c9582ce1e821df4c912d4a243ac90"
+my_ordinals_loan10 = "0x3ac09157f67453d30df774456c4d49f7999e0b844047218a8103f2f59907e9cd"
 
 [dependencies]
 AptosFramework = { git = "https://github.com/aptos-labs/aptos-core.git", subdir = "aptos-move/framework/aptos-framework", rev = "testnet" }
+
+
+
+[dependencies.AptosTokenObjects]
+git = 'https://github.com/aptos-labs/aptos-core.git'
+rev = 'main'
+subdir = 'aptos-move/framework/aptos-token-objects'
+
+
+[dependencies.My_Ordinals_Loan20]
+git = "https://github.com/gladguy/DeFiOrdinals.git"
+rev = 'devnet'
+subdir = 'SmartContract/aptos/BorrowRequest'
+
+
+[dependencies.My_Ordinals_Loan]
+git = "https://github.com/gladguy/DeFiOrdinals.git"
+rev = 'devnet'
+subdir = 'SmartContract/aptos/Ordinals'

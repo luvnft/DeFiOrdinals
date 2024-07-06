@@ -1,11 +1,14 @@
-module my_ordinals_loan10::lend_request {
+module my_ordinals_loan500::lend_request {
     use std::signer;
     use std::vector;
     use aptos_std::table_with_length;
     use aptos_std::smart_vector;
     use aptos_framework::object;
     use aptos_framework::timestamp;
-    use my_ordinals_loan20::borrow_request_contract;
+    use aptos_framework::aptos_coin;
+    use aptos_framework::coin;
+
+
     const APP_OBJECT_SEED: vector<u8> = b"MYORDINALS";
 
     struct LoanIdCounter has key {
@@ -14,15 +17,10 @@ module my_ordinals_loan10::lend_request {
     
     struct Loan has store, drop, copy {
         loan_id: u64,
-        loan_amount: u64,
-        repayment_amount: u64,
-        tenure: u64,
-        borrower: address,
+        borrow_id: u64,
         lender: address,
-        platform_fee: u64,
         loanstart_time: u64,
         loanend_time: u64,
-        ordinal_token: address,
         status: u64,
     }
 
@@ -44,7 +42,7 @@ module my_ordinals_loan10::lend_request {
     }
 
     fun get_marketplace_signer_addr(): address {
-        object::create_object_address(&@my_ordinals_loan10, APP_OBJECT_SEED)
+        object::create_object_address(&@my_ordinals_loan500, APP_OBJECT_SEED)
     }
 
     fun get_marketplace_signer(marketplace_signer_addr: address): signer acquires MarketplaceSigner {
@@ -82,13 +80,12 @@ module my_ordinals_loan10::lend_request {
     }
 
     public entry fun create_loan_request(
-        borrower: address,
-        ordinal_token: address,
         lender: &signer,
-        loan_amount: u64,
-        repayment_amount: u64,
-        tenure: u64,
-        platform_fee: u64,
+        borrower: address,
+        borrow_id: u64,
+        loan_amount : u64,
+        ordinal_token : address,
+        tenure : u64
     )    acquires AptosOrdinal, LoanLedger, MarketplaceSigner, LoanIdCounter, Lenders    {
         let lender_addr = signer::address_of(lender);
         let aptos_ordinal = borrow_global_mut<AptosOrdinal>(lender_addr);
@@ -99,17 +96,13 @@ module my_ordinals_loan10::lend_request {
             // Generate the next unique loan ID
             let loan_id = get_next_loan_id();
             
+
             let loan = Loan {
                 loan_id,
-                loan_amount,
-                repayment_amount,
-                tenure,
-                borrower,
+                borrow_id,
                 lender: lender_addr,
-                platform_fee,
                 loanstart_time: timestamp::now_seconds(),
                 loanend_time: timestamp::now_seconds() + tenure * 86400, // Assuming tenure is in days
-                ordinal_token,
                 status,
             };
             table_with_length::add(&mut aptos_ordinal.current_loans, ordinal_token, loan);
@@ -140,14 +133,17 @@ module my_ordinals_loan10::lend_request {
                 smart_vector::push_back(&mut lenders.addresses, signer::address_of(lender));
                 move_to(&get_marketplace_signer(get_marketplace_signer_addr()), lenders);
             };
+            // Transfer loan amount from lender to borrower
+            coin::transfer<aptos_coin::AptosCoin>(lender, borrower, loan_amount);
         };
     }
 
      
     #[view]
     public fun check_ownership(owner_addr: address, token_addr: address): bool {
-        borrow_request_contract::check_ownership(owner_addr, token_addr)
+        my_ordinals_loan500::ordinal_nft::token_belongs_to_owner(owner_addr, token_addr)
     }
+
 
     #[view]
     public fun get_all_loans(): vector<Loan> acquires LoanLedger {

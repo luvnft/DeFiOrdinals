@@ -1,0 +1,8 @@
+@startuml
+actor User
+participant "BorrowRequest System" as BorrowRequest
+
+User -> BorrowRequest: Create BorrowRequest
+BorrowRequest -> User: Confirm BorrowRequest Created
+
+@enduml
