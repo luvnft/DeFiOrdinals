@@ -1,0 +1,20 @@
+@startuml
+actor User
+actor Lender
+participant "BorrowRequest System" as BorrowRequest
+participant "Loan System" as LoanSystem
+participant "Custody Address" as Custody
+
+Lender -> BorrowRequest: Accept BorrowRequest
+Lender -> BorrowRequest: Deposit APTOS
+BorrowRequest -> LoanSystem: Notify Loan Creation
+LoanSystem -> BorrowRequest: Confirm Loan Created
+LoanSystem -> BorrowRequest: Take NFT into Custody
+BorrowRequest -> Custody: Transfer NFT to Contract Custody
+BorrowRequest -> LoanSystem: Confirm NFT in Custody
+LoanSystem -> BorrowRequest: Send APTOS to Borrower
+BorrowRequest -> User: Transfer APTOS
+BorrowRequest -> User: Notify Loan Created
+BorrowRequest -> Lender: Notify Loan Created
+
+@enduml
