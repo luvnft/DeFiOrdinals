@@ -573,7 +573,7 @@ const Dashboard = (props) => {
             : magicEdenAddress
           : WAHEED_ADDRESS
       );
-      // console.log("supplies", supplies);
+
       if ((plugAddress || martinAddress) && api_agent) {
         // Fetching asset id's which all are user lended.
         const getUsersBorrow = await api_agent.getUserBorrows(

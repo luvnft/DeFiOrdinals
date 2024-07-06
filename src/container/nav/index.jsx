@@ -12,27 +12,21 @@ import {
   Modal,
   Row,
   Tabs,
-  Tooltip,
   Tour,
   Typography,
 } from "antd";
 import gsap from "gsap";
 import React, { useEffect, useRef, useState } from "react";
 import { AiOutlineDisconnect } from "react-icons/ai";
-import { FaAngleDown } from "react-icons/fa6";
-import { PiCopyBold } from "react-icons/pi";
 import { RiWallet3Fill } from "react-icons/ri";
 import { RxHamburgerMenu } from "react-icons/rx";
-import TailSpin from "react-loading-icons/dist/esm/components/tail-spin";
 import { AddressPurpose, BitcoinNetworkType, getAddress } from "sats-connect";
 import ordinals_O_logo from "../../assets/brands/ordinals_O_logo.png";
 import Bitcoin from "../../assets/coin_logo/ckbtc.png";
-import Eth from "../../assets/coin_logo/cketh.png";
 import logo from "../../assets/logo/ordinalslogo.png";
 import Aptos from "../../assets/wallet-logo/aptos_logo.png";
 import CustomButton from "../../component/Button";
 import CardDisplay from "../../component/card";
-import Loading from "../../component/loading-wrapper/secondary-loader";
 import ModalDisplay from "../../component/modal";
 import Notify from "../../component/notification";
 import { setLendHeader, setLoading } from "../../redux/slice/constant";
@@ -64,6 +58,7 @@ import {
   PETRA_WALLET_KEY,
   UNISAT_WALLET_KEY,
   XVERSE_WALLET_KEY,
+  addressRendererWithCopy,
   apiUrl,
   paymentWallets,
   sliceAddress,
@@ -87,8 +82,8 @@ const Nav = (props) => {
   const { dispatch, reduxState } = props.redux;
 
   const walletState = reduxState.wallet;
-  const constantState = reduxState.constant;
-  // console.log("walletState", walletState);
+  // const constantState = reduxState.constant;
+
   const isTableCreated = walletState.isTableCreated;
   const petraAddress = walletState.petra.address;
   const martinAddress = walletState.martin.address;
@@ -415,10 +410,7 @@ const Nav = (props) => {
       collapseConnectedModal();
     }
   };
-  // console.log("isTableCreated", isTableCreated);
-  // console.log("aptosWallets", aptosWallets);
-  // console.log("connected", connected);
-  // console.log("aptosWallets[0].name", aptosWallets[0].name);
+
   const showDrawer = () => {
     setOpen(true);
   };
@@ -651,20 +643,6 @@ const Nav = (props) => {
       </Row>
     ),
   ];
-
-  const addressRendererWithCopy = (address) => {
-    return (
-      <Tooltip arrow title={"Copied"} trigger={"click"} placement="top">
-        <PiCopyBold
-          className="pointer"
-          onClick={() => {
-            navigator.clipboard.writeText(address);
-          }}
-          size={15}
-        />
-      </Tooltip>
-    );
-  };
 
   const avatarRenderer = (width) => (
     <img

@@ -7,6 +7,8 @@ import nightly from "../assets/wallet-logo/nightly.png";
 import petra from "../assets/wallet-logo/petra.png";
 import unisat from "../assets/wallet-logo/unisat_logo.png";
 import xverse from "../assets/wallet-logo/xverse_logo_whitebg.png";
+import { Tooltip } from "antd";
+import { PiCopyBold } from "react-icons/pi";
 
 export const API_METHODS = {
   get: axios.get,
@@ -41,6 +43,7 @@ const eth = process.env.REACT_APP_ETH_CANISTER_ID;
 const affiliates = process.env.REACT_APP_AFFILIATES_CANISTER_ID;
 const hostLink = process.env.REACT_APP_HOST;
 export const aptos_canister = process.env.REACT_APP_APTOS_CANISTER_ID;
+export const custodyAddress = process.env.REACT_APP_ORDINAL_CUSTODY_ADDRESS;
 
 export const whitelist = [ordinals, btc, eth, affiliates];
 export const host = hostLink;
@@ -104,6 +107,20 @@ export const sliceAddress = (address, slicePoint = 5) => (
     {address?.slice(address.length - slicePoint, address.length)}
   </>
 );
+
+export const addressRendererWithCopy = (address) => {
+  return (
+    <Tooltip arrow title={"Copied"} trigger={"click"} placement="top">
+      <PiCopyBold
+        className="pointer"
+        onClick={() => {
+          navigator.clipboard.writeText(address);
+        }}
+        size={15}
+      />
+    </Tooltip>
+  );
+};
 
 export const calculateFee = (bytes, preference) => {
   return Math.round(
@@ -191,12 +208,6 @@ export const daysDifferenceFromNow = (timestamp) => {
 
   return differenceInDays;
 }
-
-// Example usage
-const timestamp = 1720857472; // Example timestamp
-const daysDifference = daysDifferenceFromNow(timestamp);
-console.log(daysDifference); // Output: the difference in days
-
 
 // Function to format hours in 12-hour clock format
 export const format12Hour = (hours) => {

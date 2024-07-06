@@ -225,8 +225,12 @@ a {
 }
 
 /* togglebutton color */
+.ant-switch {
+  background-color: #222222;
+}
+
 .ant-switch.ant-switch-checked {
-  background: #6b3ab1;
+  background: #6b3ab1 !important;
 }
 
 .ant-switch.ant-switch-checked:hover:not(.ant-switch-disabled) {
@@ -1621,6 +1625,10 @@ input::placeholder {
 
 .border-padding-medium {
   padding: 10px 18px;
+}
+
+.border-padding-medium-box {
+  padding: 2px 7px;
 }
 
 .background {

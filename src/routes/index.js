@@ -26,11 +26,6 @@ export const publicRoutes = [
     path: `/bridge`,
     component: lazy(() => import("../pages/bridgeOrdinals")),
   },
-  // {
-  //   name: "Dashboard",
-  //   path: `/dashboard`,
-  //   component: lazy(() => import("../pages/dashboard")),
-  // },
   {
     name: "Lending",
     path: `/lending`,

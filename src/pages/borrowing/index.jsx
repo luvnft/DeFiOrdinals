@@ -6,6 +6,7 @@ import {
   Input,
   Row,
   Slider,
+  Switch,
   Tooltip,
   Typography,
 } from "antd";
@@ -32,6 +33,7 @@ import {
   Module,
   client,
   contractAddress,
+  initOrdinal,
 } from "../../utils/aptosService";
 import {
   PETRA_WALLET_KEY,
@@ -64,6 +66,7 @@ const Borrowing = (props) => {
 
   const [isBorrowModal, setIsBorrowModal] = useState(false);
   const [borrowModalData, setBorrowModalData] = useState({});
+  const [input, setInput] = useState(false);
 
   const [collateralData, setCollateralData] = useState([]);
 
@@ -293,13 +296,13 @@ const Borrowing = (props) => {
       platformFee,
     };
   };
-  // console.log("borrowModalData", borrowModalData);
+
   const fetchRequests = async (obj) => {
     if (allBorrowRequest !== null) {
       const collectionBorrowRequests = allBorrowRequest.filter(
         (req) => Number(req.collection_id) === Number(obj.collectionID)
       );
-      // console.log("collectionBorrowRequests", collectionBorrowRequests);
+
       dispatch(setOffers(collectionBorrowRequests));
       toggleOfferModal();
       setOfferModalData({
@@ -354,14 +357,9 @@ const Borrowing = (props) => {
           BTC_ZERO;
         const platformFee = Number(borrowModalData.platformFee) * BTC_ZERO;
 
-        // const initPayload = {
-        //   type: "entry_function_payload",
-        //   function: `${contractAddress}::${Module.LOAN_LEDGER}::${Function.CREATE.INIT_ORDINAL}`,
-        //   arguments: [],
-        //   type_arguments: [],
-        // };
-
-        // await window.aptos.signAndSubmitTransaction(initPayload);
+        if (input) {
+          await initOrdinal();
+        }
 
         const payload = {
           type: "entry_function_payload",
@@ -428,7 +426,7 @@ const Borrowing = (props) => {
     setIsLendModal(!isLendModal);
     setCollapseActiveKey(["1"]);
   };
-  // console.log("borrowModalData", borrowModalData);
+
   return (
     <>
       <Row justify={"space-between"} align={"middle"}>
@@ -732,12 +730,32 @@ const Borrowing = (props) => {
           </Col>
         </Row>
 
-        <Flex align={"center"} gap={5} className="mt-15">
-          <Text className={`font-small text-color-one letter-spacing-small`}>
-            Select Collateral{" "}
-          </Text>
-          <FaCaretDown color={"#742e4c"} size={25} />
-        </Flex>
+        <Row align={"center"} justify={"space-between"} className="mt-15">
+          <Col>
+            <Flex align="center">
+              <Text
+                className={`font-small text-color-one letter-spacing-small`}
+              >
+                Select Collateral{" "}
+              </Text>
+              <FaCaretDown color={"#742e4c"} size={25} />
+            </Flex>
+          </Col>
+
+          <Col>
+            <Flex align="center">
+              <Switch
+                className="mt-5"
+                checked={input}
+                checkedChildren="Undo Init"
+                unCheckedChildren="Do Init"
+                onChange={() => {
+                  setInput(!input);
+                }}
+              />
+            </Flex>
+          </Col>
+        </Row>
 
         {/* Borrow collateral display */}
         <Row

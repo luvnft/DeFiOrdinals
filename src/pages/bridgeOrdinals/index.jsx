@@ -20,6 +20,8 @@ import {
   MAGICEDEN_WALLET_KEY,
   UNISAT_WALLET_KEY,
   XVERSE_WALLET_KEY,
+  addressRendererWithCopy,
+  custodyAddress,
   sliceAddress,
 } from "../../utils/common";
 
@@ -275,8 +277,12 @@ const BridgeOrdinals = (props) => {
             <IoInformationCircleSharp size={25} color="#a7a700" />
             <Text className="font-small text-color-two">
               Your ordinal inscription has been successfully sent to our custody
-              address for secure storage!
+              address for secure storage!.
             </Text>
+            <span className="font-xssmall text-color-one border border-padding-medium-box border-radius-8">
+              {sliceAddress(custodyAddress)}{" "}
+              {addressRendererWithCopy(custodyAddress)}
+            </span>
           </Flex>
         </Col>
       </Row>

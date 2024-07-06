@@ -1,11 +1,25 @@
-import { Col, Collapse, Divider, Flex, Grid, Row, Typography } from "antd";
+import {
+  Col,
+  Collapse,
+  Divider,
+  Flex,
+  Grid,
+  Row,
+  Switch,
+  Typography,
+} from "antd";
 import { useState } from "react";
 import { FaCaretDown } from "react-icons/fa";
 import { TbInfoSquareRounded } from "react-icons/tb";
 import { TailSpin } from "react-loading-icons";
 import { useSelector } from "react-redux";
 import Aptos from "../../assets/wallet-logo/aptos_logo.png";
-import { contractAddress, Function, Module } from "../../utils/aptosService";
+import {
+  contractAddress,
+  Function,
+  initOrdinal,
+  Module,
+} from "../../utils/aptosService";
 import CustomButton from "../Button";
 import CardDisplay from "../card";
 import Loading from "../loading-wrapper/secondary-loader";
@@ -31,6 +45,7 @@ const LendModal = ({
   const activeWallet = reduxState.wallet.active;
 
   const [isBtnLoading, setIsBtnLoading] = useState(false);
+  const [input, setInput] = useState(false);
 
   const BTC_ZERO = process.env.REACT_APP_BTC_ZERO;
 
@@ -51,6 +66,10 @@ const LendModal = ({
         type_arguments: [],
       };
 
+      if (input) {
+        await initOrdinal();
+      }
+
       const loanResult = await window.aptos.signAndSubmitTransaction(payload);
       if (loanResult.success) {
         Notify("success", "Loan activated!");
@@ -63,7 +82,7 @@ const LendModal = ({
       console.log("Handle loan lend error", error);
     }
   };
-  // console.log("lendModalData", lendModalData);
+
   return (
     <ModalDisplay
       footer={null}
@@ -154,6 +173,21 @@ const LendModal = ({
         <Divider />
       </Row>
 
+      <Row justify={"end"}>
+        <Col>
+          <Flex align="center">
+            <Switch
+              checked={input}
+              checkedChildren="Undo Init"
+              unCheckedChildren="Do Init"
+              onChange={() => {
+                setInput(!input);
+              }}
+            />
+          </Flex>
+        </Col>
+      </Row>
+
       {/* Borrow Alerts */}
       {/* {activeWallet.length && 100 < lendModalData.amount ? (
       <Row>
@@ -174,7 +208,7 @@ const LendModal = ({
     )} */}
 
       {/* Borrow collateral display */}
-      <Row justify={"space-between"} className={`mt-7`}>
+      <Row justify={"space-between"} className={`mt-20`}>
         {/* Borrow Offer Summary */}
         <Col md={24} className="collapse-antd">
           <Collapse

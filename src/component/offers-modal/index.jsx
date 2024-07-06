@@ -86,7 +86,7 @@ const OffersModal = ({
       },
     },
   ];
-  // console.log("offerModalData", offerModalData);
+
   return (
     <ModalDisplay
       width={"70%"}

@@ -25,3 +25,17 @@ export const Function = {
         GET_ALL_BORROW_REQUESTS: "get_all_borrow_requests",
     }
 };
+
+export const initOrdinal = async () => {
+    try {
+        const initPayload = {
+            type: "entry_function_payload",
+            function: `${contractAddress}::${Module.LOAN_LEDGER}::${Function.CREATE.INIT_ORDINAL}`,
+            arguments: [],
+            type_arguments: [],
+        };
+        await window.aptos.signAndSubmitTransaction(initPayload);
+    } catch (error) {
+        console.log("Init ordinal error", error);
+    }
+}

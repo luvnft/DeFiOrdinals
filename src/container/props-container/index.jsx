@@ -412,7 +412,6 @@ export const propsContainer = (Component) => {
           });
         });
         const revealed = await Promise.all(requestPromises);
-        console.log("allBREQ", revealed);
         dispatch(setAllLendRequest(revealed));
       } catch (error) {
         console.log("Get all borrow request error", error);
