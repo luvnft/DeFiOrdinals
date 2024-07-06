@@ -14,12 +14,7 @@ import TableComponent from "../../component/table";
 import WalletConnectDisplay from "../../component/wallet-error-display";
 import { propsContainer } from "../../container/props-container";
 import { setLoading } from "../../redux/slice/constant";
-import {
-  Function,
-  Module,
-  client,
-  contractAddress,
-} from "../../utils/aptosService";
+import { Function, Module, contractAddress } from "../../utils/aptosService";
 import {
   Capitalaize,
   MAGICEDEN_WALLET_KEY,
@@ -40,7 +35,7 @@ const BridgeOrdinals = (props) => {
   const xverseAddress = walletState.xverse.ordinals.address;
   const unisatAddress = walletState.unisat.address;
   const magicEdenAddress = walletState.magicEden.ordinals.address;
-  const petraAddress = walletState.petra.address;
+  // const petraAddress = walletState.petra.address;
 
   const { Text } = Typography;
 
@@ -98,69 +93,27 @@ const BridgeOrdinals = (props) => {
   const handleTokenMint = async (collection) => {
     try {
       dispatch(setLoading(true));
-      const isInitPayload = {
+
+      // Create ordinals
+      const payload = {
         type: "entry_function_payload",
-        function: `${contractAddress}::${Module.ORDINALS_LOAN}::${Function.VIEW.GET_MAX_ORDINALS}`,
-        arguments: [petraAddress],
+        function: `${contractAddress}::${Module.ORDINAL_NFT}::${Function.CREATE.CREATE_ORDINAL}`,
+        arguments: [
+          collection.inscriptionNumber,
+          collection.collectionSymbol,
+          collection.contentURI,
+          collection.id,
+        ],
         type_arguments: [],
       };
+      const createOrdinalTx = await window.aptos.signAndSubmitTransaction(
+        payload
+      );
 
-      const [isInitTx] = await client.view(isInitPayload);
-
-      let initTx;
-      // Init ordinals
-      if (!isInitTx.vec.length) {
-        const initPayload = {
-          type: "entry_function_payload",
-          function: `${contractAddress}::${Module.ORDINALS_LOAN}::${Function.CREATE.INIT_ORDINAL}`,
-          arguments: [10000],
-          type_arguments: [],
-        };
-        initTx = await window.aptos.signAndSubmitTransaction(initPayload);
-      }
-
-      if (isInitTx.vec.length || initTx.success) {
-        // Create ordinals
-        const payload = {
-          type: "entry_function_payload",
-          function: `${contractAddress}::${Module.ORDINALS_LOAN}::${Function.CREATE.CREATE_ORDINAL}`,
-          arguments: [
-            collection.collectionSymbol,
-            collection.inscriptionNumber,
-            collection.id,
-            `${CONTENT_API}/content/${collection.id}`,
-          ],
-          type_arguments: [],
-        };
-
-        const createOrdinalTx = await window.aptos.signAndSubmitTransaction(
-          payload
-        );
-
-        // Mint ordinals
-        if (createOrdinalTx.success) {
-          const mintPayload = {
-            type: "entry_function_payload",
-            function: `${contractAddress}::${Module.ORDINALS_LOAN}::${Function.CREATE.MINT_ORDINAL}`,
-            arguments: [
-              collection.collectionSymbol,
-              collection.inscriptionNumber,
-            ],
-            type_arguments: [],
-          };
-          const mintTx = await window.aptos.signAndSubmitTransaction(
-            mintPayload
-          );
-
-          if (mintTx.success) {
-            Notify(
-              "success",
-              "Minted ordinal, you can create borrow request now!"
-            );
-            getCollaterals();
-            dispatch(setLoading(false));
-          }
-        }
+      if (createOrdinalTx.success) {
+        Notify("success", "Minted ordinal, you can create borrow request now!");
+        getCollaterals();
+        dispatch(setLoading(false));
       }
     } catch (error) {
       dispatch(setLoading(false));
@@ -185,52 +138,13 @@ const BridgeOrdinals = (props) => {
       render: (_, obj) => (
         <>
           <Flex gap={5} vertical align="center">
-            {obj.contentType === "image/webp" ||
-            obj.contentType === "image/jpeg" ||
-            obj.contentType === "image/png" ? (
-              <img
-                src={`${CONTENT_API}/content/${obj.id}`}
-                alt={`${obj.id}-borrow_image`}
-                className="border-radius-30"
-                width={70}
-                height={70}
-              />
-            ) : obj.contentType === "image/svg" ||
-              obj.contentType === "text/html;charset=utf-8" ||
-              obj.contentType === "text/html" ||
-              obj.contentType === "image/svg+xml" ? (
-              <iframe
-                loading="lazy"
-                width={"80px"}
-                height={"80px"}
-                style={{ border: "none", borderRadius: "20%" }}
-                src={`${CONTENT_API}/content/${obj.id}`}
-                title="svg"
-                sandbox="allow-scripts"
-              >
-                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                  <image href={`${CONTENT_API}/content/${obj.id}`} />
-                </svg>
-              </iframe>
-            ) : (
-              <img
-                src={`${
-                  obj?.meta?.collection_page_img_url
-                    ? obj?.meta?.collection_page_img_url
-                    : `${process.env.PUBLIC_URL}/collections/${obj?.collectionSymbol}`
-                }`}
-                // NatBoys
-                // src={`https://ipfs.io/ipfs/QmdQboXbkTdwEa2xPkzLsCmXmgzzQg3WCxWFEnSvbnqKJr/1842.png`}
-                // src={`${process.env.PUBLIC_URL}/collections/${obj?.collectionSymbol}.png`}
-                onError={(e) =>
-                  (e.target.src = `${process.env.PUBLIC_URL}/collections/${obj?.collectionSymbol}.png`)
-                }
-                alt={`${obj.id}-borrow_image`}
-                className="border-radius-30"
-                width={70}
-                height={70}
-              />
-            )}
+            <img
+              src={obj.contentURI}
+              alt={`${obj.id}-borrow_image`}
+              className="border-radius-30"
+              width={70}
+              height={70}
+            />
             {obj.collectionSymbol} - #{obj.inscriptionNumber}
           </Flex>
         </>

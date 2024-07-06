@@ -10,14 +10,19 @@ import TableComponent from "../../component/table";
 import { propsContainer } from "../../container/props-container";
 import CardDisplay from "../../component/card";
 import { MdOutlineTimer } from "react-icons/md";
+import { setOffers } from "../../redux/slice/constant";
+import Notify from "../../component/notification";
 
 const Lending = (props) => {
-  const { reduxState } = props.redux;
+  const { reduxState, dispatch } = props.redux;
+  const { getAllBorrowRequest } = props.wallet;
   const approvedCollections = reduxState.constant.approvedCollections;
-  const activeWallet = reduxState.wallet.active;
-  const userAssets = reduxState.constant.userAssets;
-  const petraAddress = reduxState.wallet.petra.address;
+  // const borrowCollateral = reduxState.constant.borrowCollateral;
+  // const activeWallet = reduxState.wallet.active;
+  // const userAssets = reduxState.constant.userAssets;
+  // const petraAddress = reduxState.wallet.petra.address;
   const aptosvalue = reduxState.constant.aptosvalue;
+  const allBorrowRequest = reduxState.constant.allBorrowRequest;
 
   const btcvalue = reduxState.constant.btcvalue;
 
@@ -46,12 +51,12 @@ const Lending = (props) => {
         },
       ],
       onFilter: (_, record) => {
-        // const collectionBorrowRequests = allBorrowRequest.filter(
-        //   (req) => Number(req.collectionId) === Number(record.collectionID)
-        // );
-        // if (collectionBorrowRequests.length) {
-        return record;
-        // }
+        const collectionBorrowRequests = allBorrowRequest.filter(
+          (req) => req.collectionSymbol === record.collectionName
+        );
+        if (collectionBorrowRequests.length) {
+          return record;
+        }
       },
       render: (_, obj) => {
         const name = obj?.name;
@@ -107,10 +112,10 @@ const Lending = (props) => {
       },
     },
     {
-      key: "request",
+      key: "bestloan",
       title: "Best Loan",
       align: "center",
-      dataIndex: "request",
+      dataIndex: "bestLoan",
       render: (_, obj) => {
         return (
           <Flex align="center" justify="center">
@@ -202,38 +207,25 @@ const Lending = (props) => {
   ];
 
   const fetchRequests = async (obj) => {
-    // try {
-    //   const contract = await contractGenerator();
-    //   console.log("contract", contract, "obj.collectionID", obj.collectionID);
-    //   const offers = await contract.methods
-    //     .getRequestByCollectionID(Number(obj.collectionID))
-    //     .call({ from: metaAddress });
-    //   console.log("requests", offers);
-    toggleOfferModal();
-    //   // dispatch(setOffers(offers));
-    setOfferModalData({
-      ...obj,
-      thumbnailURI: obj.thumbnailURI,
-      collectionName: obj.name,
-    });
-    // } catch (error) {
-    //   console.log("fetch offers modal error", error);
-    // }
+    if (allBorrowRequest !== null) {
+      const collectionBorrowRequests = allBorrowRequest.filter(
+        (req) => req.collectionSymbol === obj.collectionName
+      );
+      dispatch(setOffers(collectionBorrowRequests));
+      toggleOfferModal();
+      setOfferModalData({
+        ...obj,
+        thumbnailURI: obj.thumbnailURI,
+        collectionName: obj.name,
+      });
+    } else {
+      Notify("info", "Please wait!");
+    }
   };
 
   const toggleLendModal = () => {
     setIsLendModal(!isLendModal);
     setCollapseActiveKey(["1"]);
-  };
-
-  const calcLendData = (amount) => {
-    const interest = (amount * lendModalData.interestTerm).toFixed(6);
-    // Calc 15% of platform fee.
-    const platformFee = ((interest * 15) / 100).toFixed(6);
-    return {
-      interest,
-      platformFee,
-    };
   };
 
   const toggleOfferModal = () => {
@@ -243,7 +235,6 @@ const Lending = (props) => {
     setIsOffersModal(!isOffersModal);
   };
   // console.log("lendModalData", lendModalData);
-  console.log("screens", screens);
   return (
     <>
       <Row justify={"space-between"} align={"middle"}>
@@ -407,22 +398,26 @@ const Lending = (props) => {
       </Row>
 
       <LendModal
+        btcvalue={btcvalue}
+        aptosvalue={aptosvalue}
         modalState={isLendModal}
         lendModalData={lendModalData}
         toggleLendModal={toggleLendModal}
         setLendModalData={setLendModalData}
         collapseActiveKey={collapseActiveKey}
+        getAllBorrowRequest={getAllBorrowRequest}
         setCollapseActiveKey={setCollapseActiveKey}
       />
 
       <OffersModal
-        userAssets={userAssets}
+        btcvalue={btcvalue}
+        aptosvalue={aptosvalue}
         modalState={isOffersModal}
         offerModalData={offerModalData}
-        toggleOfferModal={toggleOfferModal}
-        setOfferModalData={setOfferModalData}
         toggleLendModal={toggleLendModal}
+        toggleOfferModal={toggleOfferModal}
         setLendModalData={setLendModalData}
+        setOfferModalData={setOfferModalData}
       />
     </>
   );

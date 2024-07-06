@@ -1039,8 +1039,7 @@ input::placeholder {
 
 /* Btn CSS*/
 .click-btn {
-  height: 3.5em;
-  border-radius: 0.9em;
+  height: 3em;
   border: 1px solid #333333;
   color: #bdbdbd;
   background: #1c1a1c;
@@ -1357,6 +1356,9 @@ input::placeholder {
   border-width: 2px;
   padding: 10px;
   border-color: #c1c1c1d5 !important;
+}
+
+.box-shadow-white {
   box-shadow: 0 5px 9px 0 #f7f7f7e0, 0 6px 0 1px #7c7c7c00;
 }
 
@@ -1412,9 +1414,18 @@ input::placeholder {
   }
 }
 
+.ant-statistic .ant-statistic-content {
+  color: white;
+  font-size: 16px;
+}
+
 /* --------------------------------------------- */
 .collapse-antd {
   width: 100%;
+}
+
+.ant-collapse-small>.ant-collapse-item>.ant-collapse-header>.ant-collapse-expand-icon {
+  margin-inline-start: 0px;
 }
 
 .collapse-antd>.ant-collapse-borderless {
@@ -1443,6 +1454,17 @@ input::placeholder {
 .themed-card-dark {
   border: 1px solid #3e3e3e;
   border-radius: 9px;
+}
+
+.dark-card>.ant-card-body {
+  background-color: #1c1a1c;
+  padding: 5px 15px 5px 22px !important;
+  border-radius: 0 0 6px 6px;
+}
+
+.ant-card .ant-card-cover img,
+.ant-card .ant-card-cover img+.ant-image-mask {
+  border-radius: 10px 10px 0 0;
 }
 
 .selection-css {

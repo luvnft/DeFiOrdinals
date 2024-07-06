@@ -176,6 +176,28 @@ export const DateTimeConverter = (timestamps) => {
   return timeStamp;
 };
 
+export const daysDifferenceFromNow = (timestamp) => {
+  // Convert the timestamp to milliseconds (assuming the input timestamp is in seconds)
+  const targetDate = new Date(timestamp);
+
+  // Get the current date and time
+  const now = Date.now();
+
+  // Calculate the difference in milliseconds
+  const differenceInMillis = now - targetDate.getTime();
+
+  // Convert the difference from milliseconds to days and get the absolute value
+  const differenceInDays = Math.floor(Math.abs(differenceInMillis) / (1000 * 60 * 60 * 24));
+
+  return differenceInDays;
+}
+
+// Example usage
+const timestamp = 1720857472; // Example timestamp
+const daysDifference = daysDifferenceFromNow(timestamp);
+console.log(daysDifference); // Output: the difference in days
+
+
 // Function to format hours in 12-hour clock format
 export const format12Hour = (hours) => {
   return hours % 12 || 12;

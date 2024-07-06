@@ -1,6 +1,5 @@
-import { Network } from "@aptos-labs/ts-sdk";
 import { Actor, HttpAgent } from "@dfinity/agent";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import Notify from "../../component/notification";
@@ -8,16 +7,15 @@ import { apiFactory } from "../../ordinal_canister";
 import {
   setAgent,
   setAllBorrowRequest,
+  setAllLendRequest,
   setApprovedCollection,
   setAptosValue,
   setBorrowCollateral,
   setBtcValue,
   setCollection,
-  setOffers,
   setUserAssets,
   setUserCollateral,
 } from "../../redux/slice/constant";
-import { getAptosClient } from "../../utils/aptosClient";
 import {
   Function,
   Module,
@@ -67,8 +65,6 @@ export const propsContainer = (Component) => {
 
     const aptosCanisterId = process.env.REACT_APP_ORDINAL_CANISTER_ID;
     const WAHEED_ADDRESS = process.env.REACT_APP_WAHEED_ADDRESS;
-
-    const [isPlugError, setIsPlugError] = useState(false);
 
     const btcPrice = async () => {
       const BtcData = await API_METHODS.get(
@@ -273,33 +269,48 @@ export const propsContainer = (Component) => {
         );
         const supplyData = userAssets.map((asset) => JSON.parse(asset));
         const colResult = await getCollectionDetails(supplyData);
-        // console.log("colResult", colResult);
+
         // --------------------------------------------------
 
-        const payload = {
+        const addressPayload = {
           type: "entry_function_payload",
-          function: `${contractAddress}::${Module.ORDINALS_LOAN}::${Function.VIEW.GET_ORDINALS}`,
+          function: `${contractAddress}::${Module.ORDINAL_NFT}::${Function.VIEW.GET_ORDINAL_ADDRESSES}`,
           arguments: [petraAddress],
           type_arguments: [],
         };
-        const [userMintedTokens] = await client.view(payload);
-        // console.log("userMintedTokens", userMintedTokens);
-        let tokens = [];
-        if (userMintedTokens?.vec[0]?.length) {
-          tokens = userMintedTokens.vec[0].map((token) =>
-            Number(token.identifier.inscription_number)
-          );
-        }
-        // console.log("GET_ORDINALS response", tokens);
+        const [tokenAddress] = await client.view(addressPayload);
+
+        const promises = tokenAddress.map((token) => {
+          return new Promise(async (res) => {
+            const payload = {
+              type: "entry_function_payload",
+              function: `${contractAddress}::${Module.ORDINAL_NFT}::${Function.VIEW.GET_ORDINAL}`,
+              arguments: [token],
+              type_arguments: [],
+            };
+            const tokenData = await client.view(payload);
+            res([token, tokenData[2]]);
+          });
+        });
+
+        const tokens = await Promise.all(promises);
+        const inscriptionArray = tokens.map((token) => Number(token[1]));
 
         const finalData = colResult.map((asset) => {
           let data = { ...asset, collection: {} };
           approvedCollections.forEach((col) => {
             if (col.symbol === asset.collectionSymbol) {
+              let tokenAddress = "";
+              if (inscriptionArray.includes(asset.inscriptionNumber)) {
+                const index = inscriptionArray.indexOf(asset.inscriptionNumber);
+                const array = tokens[index];
+                tokenAddress = array[0];
+              }
               data = {
                 ...asset,
+                tokenAddress,
                 collection: col,
-                isToken: tokens.includes(asset.inscriptionNumber)
+                isToken: inscriptionArray.includes(asset.inscriptionNumber)
                   ? true
                   : false,
               };
@@ -309,7 +320,6 @@ export const propsContainer = (Component) => {
         });
 
         const borrowCollateral = finalData.filter((asset) => asset.isToken);
-        // console.log("borrowCollateral", borrowCollateral);
         dispatch(setUserCollateral(finalData));
         dispatch(setBorrowCollateral(borrowCollateral));
       } catch (error) {
@@ -321,13 +331,89 @@ export const propsContainer = (Component) => {
       try {
         const payload = {
           type: "entry_function_payload",
-          function: `${contractAddress}::${Module.ORDINALS_LOAN}::${Function.VIEW.GET_ALL_BORROW_REQUESTS}`,
+          function: `${contractAddress}::${Module.LOAN_LEDGER}::${Function.VIEW.GET_ALL_BORROW_REQUESTS}`,
           arguments: [],
           type_arguments: [],
         };
         const [borrowRequest] = await client.view(payload);
-        dispatch(setAllBorrowRequest(borrowRequest));
-        // console.log("ALL borrowRequest", borrowRequest);
+
+        const promises = borrowRequest.map((req) => {
+          return new Promise(async (res) => {
+            const payload = {
+              type: "entry_function_payload",
+              function: `${contractAddress}::${Module.ORDINAL_NFT}::${Function.VIEW.GET_ORDINAL}`,
+              arguments: [req.ordinal_token],
+              type_arguments: [],
+            };
+            const [collectionSymbol, contentURL, inscriptionNumber, id] =
+              await client.view(payload);
+            res({
+              ...req,
+              collectionSymbol,
+              contentURL,
+              inscriptionNumber,
+              id,
+            });
+          });
+        });
+
+        const requests = await Promise.all(promises);
+        dispatch(setAllBorrowRequest(requests));
+      } catch (error) {
+        console.log("Get all borrow request error", error);
+      }
+    };
+
+    const getAllLendRequest = async () => {
+      try {
+        const payload = {
+          type: "entry_function_payload",
+          function: `${contractAddress}::${Module.LOAN_LEDGER}::${Function.VIEW.GET_ALL_LOANS}`,
+          arguments: [],
+          type_arguments: [],
+        };
+        const [lendRequest] = await client.view(payload);
+
+        const promises = lendRequest.map((req) => {
+          return new Promise(async (res) => {
+            const payload = {
+              type: "entry_function_payload",
+              function: `${contractAddress}::${Module.ORDINAL_NFT}::${Function.VIEW.GET_ORDINAL}`,
+              arguments: [req.ordinal_token],
+              type_arguments: [],
+            };
+            const [collectionSymbol, contentURL, inscriptionNumber, id] =
+              await client.view(payload);
+            res({
+              ...req,
+              collectionSymbol,
+              contentURL,
+              inscriptionNumber,
+              id,
+            });
+          });
+        });
+
+        const requests = await Promise.all(promises);
+
+        const requestPromises = requests.map((asset) => {
+          return new Promise(async (res) => {
+            const getPayload = {
+              type: "entry_function_payload",
+              function: `${contractAddress}::${Module.LOAN_LEDGER}::${Function.VIEW.GET_BORROW_REQUEST}`,
+              arguments: [asset.borrower, asset.ordinal_token],
+              type_arguments: [],
+            };
+            const [ordinal] = await client.view(getPayload);
+            res({
+              ...asset,
+              ...ordinal.vec[0],
+            });
+          });
+        });
+        const revealed = await Promise.all(requestPromises);
+        console.log("allBREQ", revealed);
+        dispatch(setAllLendRequest(revealed));
       } catch (error) {
         console.log("Get all borrow request error", error);
       }
@@ -430,11 +516,25 @@ export const propsContainer = (Component) => {
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeWallet, approvedCollections]);
 
+    useEffect(() => {
+      if (activeWallet.length && approvedCollections[0]) {
+        getAllBorrowRequest();
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeWallet, approvedCollections]);
+
+    useEffect(() => {
+      if (activeWallet.length && approvedCollections[0]) {
+        getAllLendRequest();
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeWallet, approvedCollections]);
+
     return (
       <Component
         {...props}
         router={{ location, navigate, params }}
-        redux={{ dispatch, reduxState, isPlugError }}
+        redux={{ dispatch, reduxState }}
         wallet={{
           api_agent,
           ckBtcAgent,
@@ -443,6 +543,7 @@ export const propsContainer = (Component) => {
           ckBtcActorAgent,
           ckEthActorAgent,
           getCollaterals,
+          getAllLendRequest,
           getAllBorrowRequest,
         }}
       />

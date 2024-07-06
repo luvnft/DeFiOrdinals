@@ -28,6 +28,7 @@ const state = {
   userCollateral: null,
   borrowCollateral: null,
   allBorrowRequest: null,
+  allLendRequest: null,
   userOffers: null
 };
 
@@ -139,6 +140,10 @@ const constantSlice = createSlice({
       state.allBorrowRequest = action.payload;
     },
 
+    setAllLendRequest: (state, action) => {
+      state.allLendRequest = action.payload;
+    },
+
     setDashboardData: (state, action) => {
       state.dashboardData = action.payload;
     },
@@ -149,6 +154,7 @@ export const {
   setLoading,
   setLoaderTip,
   setCollection,
+  setAllLendRequest,
   setBtcValue,
   setAirDropData,
   setAirPoints,

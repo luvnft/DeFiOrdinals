@@ -9,7 +9,6 @@ import TableComponent from "../table";
 
 const OffersModal = ({
   btcvalue,
-  userAssets,
   aptosvalue,
   modalState,
   offerModalData,
@@ -19,8 +18,8 @@ const OffersModal = ({
 }) => {
   const { Text } = Typography;
   const state = useSelector((state) => state);
+  const petraAddress = state.wallet.petra.address;
   const offers = state.constant.offers;
-  const userOffers = state.constant.userOffers;
 
   const BTC_ZERO = process.env.REACT_APP_BTC_ZERO;
 
@@ -49,11 +48,6 @@ const OffersModal = ({
       align: "center",
       dataIndex: "loanToValue",
       render: (_, obj) => {
-        // console.log("Number(obj.loan_amount)", Number(obj.loan_amount));
-        // console.log(
-        //   "Number(offerModalData.floorPrice)",
-        //   Number(offerModalData.floorPrice)
-        // );
         const floor =
           ((Number(offerModalData.floorPrice) / BTC_ZERO) * btcvalue) /
           aptosvalue;
@@ -74,7 +68,7 @@ const OffersModal = ({
       align: "center",
       dataIndex: "loanTime",
       render: (_, obj) => {
-        const [date, time] = DateTimeConverter(Number(obj.timestamp) * 1000);
+        const [date] = DateTimeConverter(Number(obj.timestamp) * 1000);
         return (
           <Flex vertical gap={3}>
             <Text
@@ -144,13 +138,9 @@ const OffersModal = ({
                     align: "center",
                     dataIndex: "borrow",
                     render: (_, obj) => {
-                      // const userOffer = userOffers?.find(
-                      //   (predict) =>
-                      //     predict.ckTransactionID === obj.ckTransactionID
-                      // );
                       return (
                         <CustomButton
-                          // disabled={userOffer}
+                          disabled={petraAddress === obj.borrower}
                           className={
                             "click-btn font-weight-600 letter-spacing-small"
                           }
