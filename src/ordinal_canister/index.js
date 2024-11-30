@@ -1,4 +1,18 @@
 export const apiFactory = ({ IDL }) => {
+  const Float = IDL.Float64;
+  const ApprovedCollection = IDL.Record({
+    'websiteLink': IDL.Text,
+    'terms': IDL.Nat,
+    'thumbnailURI': IDL.Text,
+    'contentType': IDL.Text,
+    'collectionID': IDL.Nat,
+    'twitterLink': IDL.Text,
+    'collectionURI': IDL.Text,
+    'description': IDL.Text,
+    'marketplaceLink': IDL.Text,
+    'yield': Float,
+    'collectionName': IDL.Text,
+  });
   const WithdrawRequest = IDL.Record({
     'transaction_id': IDL.Text,
     'fee_rate': IDL.Nat,
@@ -7,6 +21,20 @@ export const apiFactory = ({ IDL }) => {
     'priority': IDL.Text,
     'asset_id': IDL.Text,
     'calculated_fee': IDL.Nat,
+  });
+  const CollectionOffers = IDL.Record({
+    'loanToValue': Float,
+    'terms': IDL.Nat,
+    'loanAmount': Float,
+    'collectionID': IDL.Nat,
+    'platformFee': Float,
+    'ckTransactionID': IDL.Text,
+    'loanTime': IDL.Int,
+    'yieldRate': Float,
+    'yieldAccured': Float,
+    'lender': IDL.Principal,
+    'floorValue': Float,
+    'offerID': IDL.Nat,
   });
   const Account = IDL.Record({
     'owner': IDL.Principal,
@@ -95,19 +123,26 @@ export const apiFactory = ({ IDL }) => {
     'repayment_amount': IDL.Nat,
     'asset_id': IDL.Text,
   });
+  const TransactionDetail = IDL.Record({
+    'transaction': IDL.Text,
+    'fee_rate': IDL.Nat,
+    'timestamp': IDL.Nat64,
+    'bitcoinAddress': IDL.Text,
+    'asset_id': IDL.Text,
+  });
   const Time = IDL.Int;
-  const Float = IDL.Float64;
+  const Float__1 = IDL.Float64;
   const LoanRequest__1 = IDL.Record({
     'apr': IDL.Nat,
     'owner': IDL.Principal,
     'name': IDL.Text,
-    'loan_amount': Float,
-    'lender_profit': Float,
-    'repayment_amount': Float,
+    'loan_amount': Float__1,
+    'lender_profit': Float__1,
+    'repayment_amount': Float__1,
     'loan_duration': IDL.Nat,
     'inscriptionid': IDL.Nat32,
-    'platform_fee': Float,
-    'bitcoin_price': Float,
+    'platform_fee': Float__1,
+    'bitcoin_price': Float__1,
   });
   const LendRecord = IDL.Record({
     'id': IDL.Nat,
@@ -116,19 +151,19 @@ export const apiFactory = ({ IDL }) => {
     'lender': IDL.Principal,
     'loan_start': Time,
     'loan_maturity': Time,
-    'bitcoin_price': Float,
+    'bitcoin_price': Float__1,
   });
   const LoanRequest = IDL.Record({
     'apr': IDL.Nat,
     'owner': IDL.Principal,
     'name': IDL.Text,
-    'loan_amount': Float,
-    'lender_profit': Float,
-    'repayment_amount': Float,
+    'loan_amount': Float__1,
+    'lender_profit': Float__1,
+    'repayment_amount': Float__1,
     'loan_duration': IDL.Nat,
     'inscriptionid': IDL.Nat32,
-    'platform_fee': Float,
-    'bitcoin_price': Float,
+    'platform_fee': Float__1,
+    'bitcoin_price': Float__1,
   });
   const LendData__1 = IDL.Record({
     'transaction_id': IDL.Text,
@@ -141,18 +176,21 @@ export const apiFactory = ({ IDL }) => {
     'asset_id': IDL.Text,
     'inscriptionid': IDL.Nat32,
   });
+  const UserPortfolio = IDL.Record({
+    'user': IDL.Principal,
+    'activeLendings': IDL.Nat,
+    'borrowValue': Float,
+    'completedLoans': IDL.Nat,
+    'profitEarned': Float,
+    'registeredTime': IDL.Int,
+    'lendingValue': Float,
+    'activeBorrows': IDL.Nat,
+  });
   const LoanDates = IDL.Record({
     'transaction_id': IDL.Text,
     'loan_start': Time,
     'loan_maturity': Time,
-    'bitcoin_price': Float,
-  });
-  const TransactionDetail = IDL.Record({
-    'transaction': IDL.Text,
-    'fee_rate': IDL.Nat,
-    'timestamp': IDL.Nat64,
-    'bitcoinAddress': IDL.Text,
-    'asset_id': IDL.Text,
+    'bitcoin_price': Float__1,
   });
   const HttpHeader = IDL.Record({ 'value': IDL.Text, 'name': IDL.Text });
   const HttpResponsePayload = IDL.Record({
@@ -186,6 +224,7 @@ export const apiFactory = ({ IDL }) => {
   return IDL.Service({
     'acceptCycles': IDL.Func([], [], []),
     'addApprovedCollections': IDL.Func([IDL.Text], [IDL.Bool], []),
+    'addApproved_Collections': IDL.Func([ApprovedCollection], [IDL.Bool], []),
     'addBitcoinWallet': IDL.Func([IDL.Text], [IDL.Bool], []),
     'addCollectionStat': IDL.Func([IDL.Text], [IDL.Bool], []),
     'addUserSupply': IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
@@ -204,6 +243,7 @@ export const apiFactory = ({ IDL }) => {
       [IDL.Bool],
       [],
     ),
+    'addloanOffer': IDL.Func([CollectionOffers, IDL.Nat], [IDL.Bool], []),
     'availableCycles': IDL.Func([], [IDL.Nat], ['query']),
     'backupAPI': IDL.Func([], [IDL.Bool], []),
     'ckBTCBalance': IDL.Func([], [IDL.Nat], []),
@@ -234,9 +274,19 @@ export const apiFactory = ({ IDL }) => {
       [IDL.Vec(IDL.Tuple(IDL.Text, IDL.Vec(RepaymentData)))],
       ['query'],
     ),
+    'getAllTransactionHistory': IDL.Func(
+      [IDL.Text],
+      [IDL.Vec(IDL.Tuple(IDL.Text, IDL.Vec(TransactionDetail)))],
+      [],
+    ),
     'getApprovedCollections': IDL.Func(
       [],
       [IDL.Vec(IDL.Tuple(IDL.Nat, IDL.Text))],
+      ['query'],
+    ),
+    'getApproved_Collections': IDL.Func(
+      [],
+      [IDL.Vec(IDL.Tuple(IDL.Nat, ApprovedCollection))],
       ['query'],
     ),
     'getAskRequest': IDL.Func([IDL.Text], [IDL.Vec(BorrowRequest)], ['query']),
@@ -251,7 +301,7 @@ export const apiFactory = ({ IDL }) => {
     'getCkBTC_oldest_tx_id': IDL.Func([], [IDL.Nat], ['query']),
     'getCkEth_oldest_tx_id': IDL.Func([], [IDL.Nat], ['query']),
     'getCollectionStat': IDL.Func([], [IDL.Text], ['query']),
-    'getDebugMessage': IDL.Func([], [IDL.Text], []),
+    'getDebugMessage': IDL.Func([], [IDL.Text], ['query']),
     'getLatest_SupplyTime': IDL.Func([], [Time], ['query']),
     'getLoanRecord': IDL.Func(
       [IDL.Text],
@@ -268,16 +318,38 @@ export const apiFactory = ({ IDL }) => {
       [IDL.Vec(IDL.Tuple(IDL.Principal, IDL.Vec(LoanRequest)))],
       ['query'],
     ),
+    'getMaxLoanAmounts': IDL.Func(
+      [],
+      [IDL.Vec(IDL.Tuple(IDL.Nat, CollectionOffers))],
+      ['query'],
+    ),
     'getMyLoans': IDL.Func([IDL.Text], [IDL.Vec(LoanRequest)], ['query']),
+    'getOffer': IDL.Func([IDL.Nat], [IDL.Vec(CollectionOffers)], ['query']),
+    'getOffers': IDL.Func(
+      [],
+      [IDL.Vec(IDL.Tuple(IDL.Nat, IDL.Vec(CollectionOffers)))],
+      ['query'],
+    ),
     'getTransaction': IDL.Func([IDL.Text], [IDL.Text], []),
+    'getTransactionHistory': IDL.Func(
+      [IDL.Text],
+      [IDL.Vec(TransactionDetail)],
+      [],
+    ),
     'getUserBorrows': IDL.Func(
       [IDL.Principal],
       [IDL.Vec(LendData__1)],
       ['query'],
     ),
+    'getUserData': IDL.Func([IDL.Principal], [UserPortfolio], ['query']),
     'getUserLending': IDL.Func(
       [IDL.Principal],
       [IDL.Vec(LendData__1)],
+      ['query'],
+    ),
+    'getUserOffers': IDL.Func(
+      [IDL.Principal],
+      [IDL.Vec(IDL.Tuple(IDL.Principal, IDL.Vec(CollectionOffers)))],
       ['query'],
     ),
     'getUserPaidAssets': IDL.Func(
@@ -311,6 +383,7 @@ export const apiFactory = ({ IDL }) => {
     'putLoanRecord': IDL.Func([LoanRequest, LoanDates], [IDL.Bool], []),
     'putLoanRequest': IDL.Func([LoanRequest], [IDL.Bool], []),
     'removeApprovedCollections': IDL.Func([IDL.Text, IDL.Nat], [IDL.Bool], []),
+    'removeApproved_Collections': IDL.Func([IDL.Nat], [IDL.Bool], []),
     'removeBitcoinWallet': IDL.Func([IDL.Text, IDL.Nat], [IDL.Bool], []),
     'removeLoanRequest': IDL.Func([IDL.Nat32], [IDL.Nat], []),
     'removeWalletAsset': IDL.Func([IDL.Nat32, IDL.Text], [IDL.Nat], []),
@@ -319,6 +392,7 @@ export const apiFactory = ({ IDL }) => {
       [IDL.Bool],
       [],
     ),
+    'removeloanOffer': IDL.Func([IDL.Nat], [IDL.Bool], []),
     'resetAPICall': IDL.Func([], [IDL.Bool], []),
     'resetSupply': IDL.Func([], [IDL.Bool], []),
     'restoreBackup': IDL.Func([], [IDL.Bool], []),
@@ -339,6 +413,8 @@ export const apiFactory = ({ IDL }) => {
       [CanisterHttpResponsePayload],
       ['query'],
     ),
+    'updateYieldNTerms': IDL.Func([Float, IDL.Nat, IDL.Nat], [IDL.Bool], []),
+    'viewTransaction': IDL.Func([IDL.Text], [IDL.Text], []),
     'wallet_receive': IDL.Func(
       [],
       [IDL.Record({ 'accepted': IDL.Nat64 })],

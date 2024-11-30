@@ -1,3 +1,5 @@
+import { Network } from "@aptos-labs/ts-sdk";
+import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import { useWallets } from "@wallet-standard/react";
 import {
   Col,
@@ -10,62 +12,56 @@ import {
   Modal,
   Row,
   Tabs,
-  Tooltip,
   Tour,
   Typography,
 } from "antd";
 import gsap from "gsap";
 import React, { useEffect, useRef, useState } from "react";
 import { AiOutlineDisconnect } from "react-icons/ai";
-import { FaAngleDown } from "react-icons/fa6";
-import { PiCopyBold } from "react-icons/pi";
 import { RiWallet3Fill } from "react-icons/ri";
 import { RxHamburgerMenu } from "react-icons/rx";
-import TailSpin from "react-loading-icons/dist/esm/components/tail-spin";
 import { AddressPurpose, BitcoinNetworkType, getAddress } from "sats-connect";
-import dfinity_backed from "../../assets/brands/icp_logo.png";
 import ordinals_O_logo from "../../assets/brands/ordinals_O_logo.png";
 import Bitcoin from "../../assets/coin_logo/ckbtc.png";
-import Eth from "../../assets/coin_logo/cketh.png";
 import logo from "../../assets/logo/ordinalslogo.png";
 import Aptos from "../../assets/wallet-logo/aptos_logo.png";
 import CustomButton from "../../component/Button";
 import CardDisplay from "../../component/card";
-import Loading from "../../component/loading-wrapper/secondary-loader";
 import ModalDisplay from "../../component/modal";
 import Notify from "../../component/notification";
-import {
-  setAirPoints,
-  setLendHeader,
-  setLoading,
-} from "../../redux/slice/constant";
+import { setLendHeader, setLoading } from "../../redux/slice/constant";
 import {
   clearWalletState,
   setMagicEdenCredentials,
+  setMartinAddress,
+  setMartinKey,
+  setNightlyAddress,
+  setNightlyKey,
   setPetraAddress,
   setPetraKey,
-  setPlugKey,
-  setPlugPrincipalId,
+  setTableCreated,
   setUnisatCredentials,
   setXverseBtc,
   setXverseOrdinals,
   setXversePayment,
 } from "../../redux/slice/wallet";
-// import { AptosFaucetClient } from "@aptos-labs/aptos-faucet-client";
+import { getAdapter } from "../../utils/adapter";
+import { getAptosClient } from "../../utils/aptosClient";
+import { Function, Module, contractAddress } from "../../utils/aptosService";
 import {
   API_METHODS,
-  APTOS_BRAND_KEY,
-  IS_DEV,
+  BTCWallets,
   MAGICEDEN_WALLET_KEY,
+  MARTIN_WALLET_KEY,
+  NIGHTLY_WALLET_KEY,
+  OKX_WALLET_KEY,
   PETRA_WALLET_KEY,
-  PLUG_WALLET_KEY,
   UNISAT_WALLET_KEY,
   XVERSE_WALLET_KEY,
-  allWallets,
+  addressRendererWithCopy,
   apiUrl,
-  host,
+  paymentWallets,
   sliceAddress,
-  whitelist,
 } from "../../utils/common";
 import { propsContainer } from "../props-container";
 
@@ -74,20 +70,30 @@ const Nav = (props) => {
   const { useBreakpoint } = Grid;
   const breakPoint = useBreakpoint();
   const { wallets } = useWallets();
+  const {
+    connect,
+    disconnect,
+    account,
+    wallets: aptosWallets,
+    connected,
+  } = useWallet();
 
   const { location, navigate } = props.router;
   const { dispatch, reduxState } = props.redux;
 
   const walletState = reduxState.wallet;
-  const constantState = reduxState.constant;
+  // const constantState = reduxState.constant;
 
-  const plugAddress = walletState.plug.principalId;
+  const isTableCreated = walletState.isTableCreated;
   const petraAddress = walletState.petra.address;
+  const martinAddress = walletState.martin.address;
   const xverseAddress = walletState.xverse.ordinals.address;
   const unisatAddress = walletState.unisat.address;
+  const nightlyAddress = walletState.nightly.address;
   const magicEdenAddress = walletState.magicEden.ordinals.address;
 
   const [isConnectModal, setConnectModal] = useState(false);
+  const [nightlyWalletConnection, setNightlyWalletConnection] = useState(false);
   const [open, setOpen] = useState(false);
   const [screenDimensions, setScreenDimensions] = React.useState({
     width: window.screen.width,
@@ -96,8 +102,6 @@ const Nav = (props) => {
   const [current, setCurrent] = useState();
 
   const avatar = process.env.REACT_APP_AVATAR;
-  const devNet = process.env.REACT_APP_APTOS_DEVNET;
-  const testNet = process.env.REACT_APP_APTOS_TESTNET;
   const SatsConnectNamespace = "sats-connect:";
 
   const { confirm } = Modal;
@@ -224,18 +228,6 @@ const Nav = (props) => {
   function isSatsConnectCompatibleWallet(wallet) {
     return SatsConnectNamespace in wallet.features;
   }
-  // console.log(devNet);
-  // const callFaucet = async (amount, address) => {
-  //   const faucetClient = new AptosFaucetClient({
-  //     BASE: IS_DEV ? devNet : testNet,
-  //   });
-  //   const request = {
-  //     amount,
-  //     address,
-  //   };
-  //   const response = await faucetClient.fund({ requestBody: request });
-  //   return response.txn_hashes;
-  // };
 
   const connectWallet = async (walletName) => {
     if (walletName === XVERSE_WALLET_KEY) {
@@ -310,34 +302,6 @@ const Nav = (props) => {
       } else {
         errorMessageNotify("No unisat wallet installed!");
       }
-    } else if (walletName === PLUG_WALLET_KEY) {
-      // PLUG
-      if (window?.ic?.plug) {
-        // Callback to print sessionData
-        const onConnectionUpdate = () => {
-          const { principalId } = window.ic.plug.sessionManager.sessionData;
-          dispatch(setPlugPrincipalId(principalId));
-          Notify();
-        };
-
-        try {
-          const publicKey = await window.ic.plug.requestConnect({
-            whitelist,
-            host,
-            onConnectionUpdate,
-            timeout: 50000,
-          });
-          const pId = await window.ic.plug.principalId;
-          dispatch(setPlugKey(publicKey));
-          dispatch(setPlugPrincipalId(pId));
-          collapseConnectedModal();
-          successMessageNotify("Plug Wallet connected!");
-        } catch (error) {
-          errorMessageNotify(error.message);
-        }
-      } else {
-        errorMessageNotify("No plug wallet installed!");
-      }
     } else if (walletName === UNISAT_WALLET_KEY) {
       try {
         const provider = wallets.find(isSatsConnectCompatibleWallet);
@@ -390,32 +354,60 @@ const Nav = (props) => {
       } catch (err) {
         console.log("magiceden error", err);
       }
-    } else {
+    } else if (walletName === PETRA_WALLET_KEY) {
       // Petra wallet
-      const getAptosWallet = () => {
-        if (APTOS_BRAND_KEY in window) {
-          return window.aptos;
-        } else {
-          window.open("https://petra.app/", `_blank`);
-          return false;
-        }
-      };
+      // const getAptosWallet = () => {
+      //   if (APTOS_BRAND_KEY in window) {
+      //     return window.aptos;
+      //   } else {
+      //     window.open("https://petra.app/", `_blank`);
+      //     return false;
+      //   }
+      // };
 
-      const wallet = getAptosWallet();
+      // const wallet = getAptosWallet();
+      try {
+        // if (!account?.address && !connected) {
+        await connect(aptosWallets[0].name);
+        // dispatch(setPetraKey(account.publicKey));
+        // dispatch(setPetraAddress(account.address));
+        // successMessageNotify("Petra Wallet connected!");
+        // } else {
+        //   Notify("error", "Connection failed!");
+        // }
+      } catch (error) {
+        // { code: 4001, message: "User rejected the request."}
+      }
+    } else if (walletName === MARTIN_WALLET_KEY) {
+      // Martin wallet
+      const getProvider = () => {
+        if ("martian" in window) {
+          return window.martian;
+        }
+        window.open("https://www.martianwallet.xyz/", "_blank");
+      };
+      const wallet = getProvider();
       try {
         if (wallet) {
           await wallet.connect();
           const { address, publicKey } = await wallet.account();
-          dispatch(setPetraKey(publicKey));
-          dispatch(setPetraAddress(address));
+          dispatch(setMartinKey(publicKey));
+          dispatch(setMartinAddress(address));
           collapseConnectedModal();
-          successMessageNotify("Petra Wallet connected!");
+          successMessageNotify("Martin Wallet connected!");
         } else {
           Notify("error", "Connection failed!");
         }
       } catch (error) {
         // { code: 4001, message: "User rejected the request."}
       }
+    } else if (walletName === NIGHTLY_WALLET_KEY) {
+      // Nightly wallet
+      // dispatch(setNightlyActive());
+      setNightlyWalletConnection(true);
+      collapseConnectedModal();
+    } else {
+      collapseConnectedModal();
     }
   };
 
@@ -447,6 +439,34 @@ const Nav = (props) => {
         return cond(
           walletState.active.includes(XVERSE_WALLET_KEY) ||
             walletState.active.includes(UNISAT_WALLET_KEY)
+        );
+      }
+      case PETRA_WALLET_KEY: {
+        return cond(
+          walletState.active.includes(MARTIN_WALLET_KEY) ||
+            walletState.active.includes(OKX_WALLET_KEY) ||
+            walletState.active.includes(NIGHTLY_WALLET_KEY)
+        );
+      }
+      case MARTIN_WALLET_KEY: {
+        return cond(
+          walletState.active.includes(PETRA_WALLET_KEY) ||
+            walletState.active.includes(OKX_WALLET_KEY) ||
+            walletState.active.includes(NIGHTLY_WALLET_KEY)
+        );
+      }
+      case NIGHTLY_WALLET_KEY: {
+        return cond(
+          walletState.active.includes(PETRA_WALLET_KEY) ||
+            walletState.active.includes(OKX_WALLET_KEY) ||
+            walletState.active.includes(MARTIN_WALLET_KEY)
+        );
+      }
+      case OKX_WALLET_KEY: {
+        return cond(
+          walletState.active.includes(PETRA_WALLET_KEY) ||
+            walletState.active.includes(NIGHTLY_WALLET_KEY) ||
+            walletState.active.includes(MARTIN_WALLET_KEY)
         );
       }
       default:
@@ -497,7 +517,70 @@ const Nav = (props) => {
     return () => {
       window.removeEventListener("resize", getScreenDimensions);
     };
-  });
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      if (account?.address && !petraAddress) {
+        dispatch(setPetraKey(account.publicKey));
+        dispatch(setPetraAddress(account.address));
+        successMessageNotify("Petra Wallet connected!");
+        if (!isTableCreated) {
+          try {
+            const aptosClient = getAptosClient(Network.DEVNET);
+            const payload = {
+              type: "entry_function_payload",
+              function: `${contractAddress}::${Module.BORROW}::${Function.CREATE_MANAGER}`,
+              arguments: [],
+              type_arguments: [],
+            };
+            // console.log("payload", payload);
+            const transaction = await window.aptos.signAndSubmitTransaction(
+              payload
+            );
+            // console.log("transaction", transaction);
+            await aptosClient.waitForTransaction(transaction.hash);
+            if (transaction.hash) {
+              dispatch(setTableCreated(true));
+            }
+          } catch (error) {
+            console.log("Manager error", error);
+          }
+        }
+        collapseConnectedModal();
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [account, dispatch]);
+
+  const init = async () => {
+    const adapter = await getAdapter();
+    try {
+      const response = await adapter.connect();
+
+      if (response.status === "Approved") {
+        dispatch(setNightlyAddress(response.address));
+        dispatch(setNightlyKey(response.publicKey));
+      } else {
+        setNightlyWalletConnection(false);
+      }
+    } catch (error) {
+      setNightlyWalletConnection(false);
+      await adapter.disconnect().catch(() => {});
+      console.log(error);
+    }
+    return adapter;
+  };
+
+  useEffect(() => {
+    (async () => {
+      if (nightlyWalletConnection) {
+        await init();
+        // Events goes here
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch, nightlyWalletConnection]);
 
   const onClick = (e) => {
     setCurrent(e.key);
@@ -528,35 +611,24 @@ const Nav = (props) => {
     ),
     getItem(
       <Row
+        className="font-style"
+        onClick={() => {
+          navigate("/borrowing");
+          setOpen(false);
+        }}
+      >
+        Borrowing
+      </Row>
+    ),
+    getItem(
+      <Row
         className="font-style "
         onClick={() => {
-          navigate("/dashboard");
+          navigate("/bridge");
           setOpen(false);
         }}
       >
-        Dashboard
-      </Row>
-    ),
-    getItem(
-      <Row
-        className="font-style"
-        onClick={() => {
-          navigate("/staking");
-          setOpen(false);
-        }}
-      >
-        Staking
-      </Row>
-    ),
-    getItem(
-      <Row
-        className="font-style"
-        onClick={() => {
-          navigate("/airdrop");
-          setOpen(false);
-        }}
-      >
-        Air Drop
+        Bridge Ordinals
       </Row>
     ),
     getItem(
@@ -572,57 +644,18 @@ const Nav = (props) => {
     ),
   ];
 
-  const optionsXs = [
-    getItem(
-      <Row
-        className="font-style"
-        onClick={() => {
-          navigate("/");
-          setOpen(false);
-        }}
-      >
-        Browse
-      </Row>
-    ),
-    getItem(
-      <Row
-        className="font-style"
-        onClick={() => {
-          navigate("/lending");
-          setOpen(false);
-        }}
-      >
-        Lending
-      </Row>
-    ),
-  ];
-
-  const addressRendererWithCopy = (address) => {
-    return (
-      <Tooltip arrow title={"Copied"} trigger={"click"} placement="top">
-        <PiCopyBold
-          className="pointer"
-          onClick={() => {
-            navigator.clipboard.writeText(address);
-          }}
-          size={15}
-        />
-      </Tooltip>
-    );
-  };
-
   const avatarRenderer = (width) => (
     <img
       src={`${avatar}/svg?seed=${
-        plugAddress
-          ? plugAddress
-          : xverseAddress
+        xverseAddress
           ? xverseAddress
           : unisatAddress
           ? unisatAddress
           : magicEdenAddress
           ? magicEdenAddress
           : petraAddress
+          ? petraAddress
+          : martinAddress
       }`}
       width={width}
       className="avatar"
@@ -668,102 +701,6 @@ const Nav = (props) => {
                 </div>
               </div>
             </Col>
-            {/* {screenDimensions.width >= 1200 && (
-              <>
-                <Flex gap={10}>
-                  <Text
-                    className={`${
-                      location.pathname === "/"
-                        ? "headertitle headerStyle"
-                        : "font-style headerCompanyName"
-                    } pointer heading-one `}
-                    onClick={() => {
-                      navigate("/");
-                      dispatch(setLendHeader(false));
-                    }}
-                    ref={ref1}
-                  >
-                    Browse
-                  </Text>
-                  <Text className="font-xsmall color-grey">|</Text>
-                  <Text
-                    className={`${
-                      location.pathname === "/lending"
-                        ? "headertitle headerStyle"
-                        : "font-style headerCompanyName"
-                    } pointer heading-one `}
-                    onClick={() => {
-                      navigate("/lending");
-                      dispatch(setLendHeader(false));
-                    }}
-                    ref={ref2}
-                  >
-                    Lending
-                  </Text>
-                  <Text className="font-xsmall color-grey">|</Text>
-
-                  <Text
-                    className={`${
-                      location.pathname === "/dashboard"
-                        ? "headertitle headerStyle"
-                        : "font-style headerCompanyName"
-                    } pointer heading-one `}
-                    onClick={() => {
-                      navigate("/dashboard");
-                      dispatch(setLendHeader(false));
-                    }}
-                    ref={ref3}
-                  >
-                    Dashboard
-                  </Text>
-                  <Text className="font-xsmall color-grey">|</Text>
-                  <Text
-                    className={`${
-                      location.pathname.includes("staking")
-                        ? "headertitle headerStyle"
-                        : "font-style headerCompanyName"
-                    } pointer heading-one  `}
-                    onClick={() => {
-                      navigate("/staking");
-                      dispatch(setLendHeader(false));
-                    }}
-                    ref={ref4}
-                  >
-                    Staking
-                  </Text>
-                  <Text className="font-xsmall color-grey">|</Text>
-                  <Text
-                    className={`${
-                      location.pathname.includes("airdrops")
-                        ? "headertitle headerStyle"
-                        : "font-style headerCompanyName"
-                    } pointer heading-one  `}
-                    onClick={() => {
-                      navigate("/airdrops");
-                      dispatch(setLendHeader(false));
-                    }}
-                    ref={ref4}
-                  >
-                    Airdrops
-                  </Text>
-                  <Text className="font-xsmall color-grey">|</Text>
-                  <Text
-                    className={`${
-                      location.pathname.includes("portfolio")
-                        ? "headertitle headerStyle"
-                        : "font-style headerCompanyName"
-                    } pointer heading-one  `}
-                    onClick={() => {
-                      navigate("/portfolio");
-                      dispatch(setLendHeader(false));
-                    }}
-                    ref={ref5}
-                  >
-                    Portfolio
-                  </Text>
-                </Flex>
-              </>
-            )} */}
           </Row>
         </Col>
 
@@ -804,34 +741,35 @@ const Nav = (props) => {
 
                 <Text
                   className={`${
-                    location.pathname === "/dashboard"
+                    location.pathname === "/borrowing"
                       ? "headertitle headerStyle"
                       : "font-style headerCompanyName"
                   } pointer heading-one `}
                   onClick={() => {
-                    navigate("/dashboard");
+                    navigate("/borrowing");
+                    dispatch(setLendHeader(false));
+                  }}
+                  ref={ref2}
+                >
+                  Borrowing
+                </Text>
+                <Text className="font-xsmall color-grey">|</Text>
+
+                <Text
+                  className={`${
+                    location.pathname === "/bridge"
+                      ? "headertitle headerStyle"
+                      : "font-style headerCompanyName"
+                  } pointer heading-one `}
+                  onClick={() => {
+                    navigate("/bridge");
                     dispatch(setLendHeader(false));
                   }}
                   ref={ref3}
                 >
-                  Dashboard
+                  Bridge Ordinals
                 </Text>
-                <Text className="font-xsmall color-grey">|</Text>
-                <Text
-                  className={`${
-                    location.pathname.includes("staking")
-                      ? "headertitle headerStyle"
-                      : "font-style headerCompanyName"
-                  } pointer heading-one  `}
-                  onClick={() => {
-                    navigate("/staking");
-                    dispatch(setLendHeader(false));
-                  }}
-                  ref={ref4}
-                >
-                  Staking
-                </Text>
-                <Text className="font-xsmall color-grey">|</Text>
+                {/* <Text className="font-xsmall color-grey">|</Text>
                 <Text
                   className={`${
                     location.pathname.includes("faucet")
@@ -845,7 +783,7 @@ const Nav = (props) => {
                   ref={ref4}
                 >
                   Faucet
-                </Text>
+                </Text> */}
                 <Text className="font-xsmall color-grey">|</Text>
                 <Text
                   className={`${
@@ -868,11 +806,12 @@ const Nav = (props) => {
 
         <Col>
           <Flex gap={10} justify="end" align={"center"} ref={ref4}>
-            {plugAddress ||
-            xverseAddress ||
+            {xverseAddress ||
             unisatAddress ||
             magicEdenAddress ||
-            petraAddress ? (
+            petraAddress ||
+            martinAddress ||
+            nightlyAddress ? (
               <Col>
                 <Flex
                   gap={5}
@@ -881,24 +820,19 @@ const Nav = (props) => {
                   onClick={showDrawer}
                   justify="space-evenly"
                 >
-                  {avatarRenderer(45)}
-                  {screenDimensions.width > 767 && (
-                    <>
-                      <Text className="text-color-two font-weight-600">
-                        {xverseAddress ? (
-                          <>{sliceAddress(xverseAddress, 5)}</>
-                        ) : unisatAddress ? (
-                          <>{sliceAddress(unisatAddress, 5)}</>
-                        ) : plugAddress ? (
-                          <>{sliceAddress(plugAddress, 5)}</>
-                        ) : magicEdenAddress ? (
-                          <>{sliceAddress(magicEdenAddress, 5)}</>
-                        ) : (
-                          <>{sliceAddress(petraAddress, 5)}</>
-                        )}
-                      </Text>
-                      <FaAngleDown color="white" size={20} />
-                    </>
+                  {screenDimensions.width > 767 ? (
+                    <>{avatarRenderer(45)}</>
+                  ) : (
+                    <label class="hamburger">
+                      <input type="checkbox" checked={open} />
+                      <svg viewBox="0 0 32 32">
+                        <path
+                          class="line line-top-bottom"
+                          d="M27 10 13 10C10.8 10 9 8.2 9 6 9 3.5 10.8 2 13 2 15.2 2 17 3.8 17 6L17 26C17 28.2 18.8 30 21 30 23.2 30 25 28.2 25 26 25 23.8 23.2 22 21 22L7 22"
+                        ></path>
+                        <path class="line" d="M7 16 27 16"></path>
+                      </svg>
+                    </label>
                   )}
                 </Flex>
               </Col>
@@ -984,17 +918,13 @@ const Nav = (props) => {
           </Row>
 
           <Row justify={"start"} align={"middle"}>
-            <Text
-              className={`${
-                breakPoint.xs ? "font-medium" : "font-small"
-              } text-color-two biticon mt-30`}
-            >
+            <Text className={`font-small text-color-two biticon mt-15`}>
               Choose how you want to connect. If you don't have a wallet, you
               can select a provider and create one.
             </Text>
           </Row>
 
-          <Row className="m-top-bottom">
+          <Row className="">
             <Col>
               <Tabs
                 items={[
@@ -1003,25 +933,23 @@ const Nav = (props) => {
                     label: (
                       <Row align={"middle"}>
                         <img
-                          src={dfinity_backed}
-                          style={{ paddingRight: "10px" }}
+                          src={Aptos}
                           alt="noimage"
-                          width="25px"
+                          style={{ paddingRight: "10px" }}
+                          width="20px"
                         />
                         <Text className="font-weight-600 letter-spacing-medium text-color-one font-large">
                           {" "}
-                          ICP
+                          APTOS
                         </Text>
                       </Row>
                     ),
                     children: (
                       <>
-                        {allWallets.map((wallet, index) => {
+                        {paymentWallets.map((wallet, index) => {
                           return (
                             <Row key={`index-${wallet.key}`}>
-                              {wallet.key === PLUG_WALLET_KEY ? (
-                                <>{walletCards(wallet, index)}</>
-                              ) : null}
+                              {walletCards(wallet, index)}
                             </Row>
                           );
                         })}
@@ -1046,43 +974,10 @@ const Nav = (props) => {
                     ),
                     children: (
                       <>
-                        {allWallets.map((wallet, index) => {
+                        {BTCWallets.map((wallet, index) => {
                           return (
                             <Row key={`index-${wallet.key}`}>
-                              {wallet.key !== PLUG_WALLET_KEY &&
-                              wallet.key !== PETRA_WALLET_KEY ? (
-                                <>{walletCards(wallet, index)}</>
-                              ) : null}
-                            </Row>
-                          );
-                        })}
-                      </>
-                    ),
-                  },
-                  {
-                    key: "3",
-                    label: (
-                      <Row align={"middle"}>
-                        <img
-                          src={Aptos}
-                          alt="noimage"
-                          style={{ paddingRight: "10px" }}
-                          width="20px"
-                        />
-                        <Text className="font-weight-600 letter-spacing-medium text-color-one font-large">
-                          {" "}
-                          APTOS
-                        </Text>
-                      </Row>
-                    ),
-                    children: (
-                      <>
-                        {allWallets.map((wallet, index) => {
-                          return (
-                            <Row key={`index-${wallet.key}`}>
-                              {wallet.key === PETRA_WALLET_KEY ? (
-                                <>{walletCards(wallet, index)}</>
-                              ) : null}
+                              {walletCards(wallet, index)}
                             </Row>
                           );
                         })}
@@ -1112,10 +1007,12 @@ const Nav = (props) => {
                     <>{sliceAddress(unisatAddress, 5)}</>
                   ) : magicEdenAddress ? (
                     <>{sliceAddress(magicEdenAddress, 5)}</>
-                  ) : plugAddress ? (
-                    <>{sliceAddress(plugAddress, 5)}</>
-                  ) : (
+                  ) : petraAddress ? (
                     <>{sliceAddress(petraAddress, 5)}</>
+                  ) : nightlyAddress ? (
+                    <>{sliceAddress(nightlyAddress, 5)}</>
+                  ) : (
+                    <>{sliceAddress(martinAddress, 5)}</>
                   )}
                 </Text>
               </Flex>
@@ -1135,21 +1032,32 @@ const Nav = (props) => {
               <Row
                 justify={"end"}
                 className="iconalignment pointer"
-                onClick={() => {
+                onClick={async () => {
+                  let adapter;
+                  if (walletState.active.includes(NIGHTLY_WALLET_KEY)) {
+                    adapter = await getAdapter();
+                    await adapter.disconnect();
+                    setNightlyWalletConnection(false);
+                  }
                   successMessageNotify("Your are signed out!");
-                  dispatch(setAirPoints(0));
-                  walletState.active.forEach((wallet) => {
+                  walletState.active.forEach(async (wallet) => {
                     if (wallet === XVERSE_WALLET_KEY) {
                       dispatch(clearWalletState(XVERSE_WALLET_KEY));
                     } else if (wallet === UNISAT_WALLET_KEY) {
                       dispatch(clearWalletState(UNISAT_WALLET_KEY));
-                    } else if (wallet === PLUG_WALLET_KEY) {
-                      dispatch(clearWalletState(PLUG_WALLET_KEY));
                     } else if (wallet === MAGICEDEN_WALLET_KEY) {
                       dispatch(clearWalletState(MAGICEDEN_WALLET_KEY));
-                    } else {
+                    } else if (wallet === PETRA_WALLET_KEY) {
                       dispatch(clearWalletState(PETRA_WALLET_KEY));
                       window.aptos.disconnect();
+                      if (connected) {
+                        disconnect();
+                      }
+                    } else if (wallet === NIGHTLY_WALLET_KEY) {
+                      dispatch(clearWalletState(NIGHTLY_WALLET_KEY));
+                    } else {
+                      dispatch(clearWalletState(MARTIN_WALLET_KEY));
+                      window.martian.disconnect();
                     }
                   });
                   onClose();
@@ -1174,18 +1082,28 @@ const Nav = (props) => {
             <Col>
               <Flex align="center">
                 <img
-                  src={Bitcoin}
-                  alt="bitcoin"
+                  src={Aptos}
+                  alt="aptos"
                   style={{ marginRight: "10px" }}
-                  width={27}
+                  width={25}
                 />
                 <Flex vertical>
                   <Text className="text-color-two font-medium">Payments</Text>
                   <Text className="text-color-one font-xsmall">
-                    {plugAddress ? (
+                    {petraAddress ? (
                       <>
-                        {sliceAddress(plugAddress, 9)}{" "}
-                        {addressRendererWithCopy(plugAddress)}
+                        {sliceAddress(petraAddress, 9)}{" "}
+                        {addressRendererWithCopy(petraAddress)}
+                      </>
+                    ) : martinAddress ? (
+                      <>
+                        {sliceAddress(martinAddress, 9)}{" "}
+                        {addressRendererWithCopy(martinAddress)}
+                      </>
+                    ) : nightlyAddress ? (
+                      <>
+                        {sliceAddress(nightlyAddress, 9)}{" "}
+                        {addressRendererWithCopy(nightlyAddress)}
                       </>
                     ) : (
                       "---"
@@ -1196,7 +1114,9 @@ const Nav = (props) => {
             </Col>
 
             <Col>
-              {walletState.active.includes(PLUG_WALLET_KEY) ? null : (
+              {walletState.active.includes(PETRA_WALLET_KEY) ||
+              walletState.active.includes(MARTIN_WALLET_KEY) ||
+              walletState.active.includes(NIGHTLY_WALLET_KEY) ? null : (
                 <CustomButton
                   className="font-size-18 black-bg text-color-one border-none"
                   title={"Connect"}
@@ -1239,11 +1159,6 @@ const Nav = (props) => {
                         {sliceAddress(magicEdenAddress, 9)}{" "}
                         {addressRendererWithCopy(magicEdenAddress)}
                       </>
-                    ) : petraAddress ? (
-                      <>
-                        {sliceAddress(petraAddress, 9)}{" "}
-                        {addressRendererWithCopy(petraAddress)}
-                      </>
                     ) : (
                       "---"
                     )}
@@ -1255,8 +1170,7 @@ const Nav = (props) => {
             <Col>
               {walletState.active.includes(XVERSE_WALLET_KEY) ||
               walletState.active.includes(UNISAT_WALLET_KEY) ||
-              walletState.active.includes(MAGICEDEN_WALLET_KEY) ||
-              walletState.active.includes(PETRA_WALLET_KEY) ? null : (
+              walletState.active.includes(MAGICEDEN_WALLET_KEY) ? null : (
                 <CustomButton
                   className="font-size-18 black-bg text-color-one border-none"
                   title={"Connect"}
@@ -1284,17 +1198,32 @@ const Nav = (props) => {
                   xl: "end",
                 }}
                 className="iconalignment pointer"
-                onClick={() => {
-                  successMessageNotify("Your are signed out!");
+                onClick={async () => {
+                  let adapter;
+                  if (walletState.active.includes(NIGHTLY_WALLET_KEY)) {
+                    adapter = await getAdapter();
+                    await adapter.disconnect();
+                    setNightlyWalletConnection(false);
+                  }
+                  successMessageNotify("Your are signed outs!");
                   walletState.active.forEach((wallet) => {
                     if (wallet === XVERSE_WALLET_KEY) {
                       dispatch(clearWalletState(XVERSE_WALLET_KEY));
                     } else if (wallet === UNISAT_WALLET_KEY) {
                       dispatch(clearWalletState(UNISAT_WALLET_KEY));
-                    } else if (wallet === PLUG_WALLET_KEY) {
-                      dispatch(clearWalletState(PLUG_WALLET_KEY));
-                    } else {
+                    } else if (wallet === MAGICEDEN_WALLET_KEY) {
                       dispatch(clearWalletState(MAGICEDEN_WALLET_KEY));
+                    } else if (wallet === PETRA_WALLET_KEY) {
+                      dispatch(clearWalletState(PETRA_WALLET_KEY));
+                      window.aptos.disconnect();
+                      if (connected) {
+                        disconnect();
+                      }
+                    } else if (wallet === NIGHTLY_WALLET_KEY) {
+                      dispatch(clearWalletState(NIGHTLY_WALLET_KEY));
+                    } else {
+                      dispatch(clearWalletState(MARTIN_WALLET_KEY));
+                      window.martian.disconnect();
                     }
                   });
                   onClose();
@@ -1318,9 +1247,9 @@ const Nav = (props) => {
                 defaultOpenKeys={["sub1"]}
                 selectedKeys={[current]}
                 mode="inline"
-                items={breakPoint.xs ? optionsXs : options}
+                items={options}
               />
-              {screenDimensions.width < 992 && (
+              {/* {screenDimensions.width < 992 && (
                 <Row style={{ padding: " 0px 24px", marginTop: "10px" }}>
                   <Col>
                     <Loading
@@ -1353,42 +1282,7 @@ const Nav = (props) => {
                     </Loading>
                   </Col>
                 </Row>
-              )}
-
-              {screenDimensions.width < 992 && (
-                <Row style={{ padding: " 0px 24px", marginTop: "20px" }}>
-                  <Col>
-                    <Loading
-                      spin={!constantState.ethvalue}
-                      indicator={
-                        <TailSpin
-                          stroke="#6a85f1"
-                          alignmentBaseline="central"
-                        />
-                      }
-                    >
-                      {constantState.ethvalue ? (
-                        <Flex gap={5}>
-                          <Text className="gradient-text-one font-small heading-one">
-                            ETH
-                          </Text>
-                          <img
-                            src={Eth}
-                            alt="noimage"
-                            style={{ justifyContent: "center" }}
-                            width="35dvw"
-                          />{" "}
-                          <Text className="gradient-text-one font-small heading-one">
-                            $ {constantState.ethvalue}
-                          </Text>
-                        </Flex>
-                      ) : (
-                        ""
-                      )}
-                    </Loading>
-                  </Col>
-                </Row>
-              )}
+              )} */}
             </>
           )}
         </>

@@ -1,19 +1,12 @@
 import { Col, Flex, Grid, Row, Typography } from "antd";
 import gsap from "gsap";
-import React, { useEffect } from "react";
+import React from "react";
 import TailSpin from "react-loading-icons/dist/esm/components/tail-spin";
-import claimed from "../../assets/airdrop/claimed.png";
 import Bitcoin_Orange from "../../assets/coin_logo/Bitcoin.png";
-import Aptos from "../../assets/wallet-logo/aptos_logo.png";
 import Bitcoin from "../../assets/coin_logo/ckbtc.png";
-import Eth from "../../assets/coin_logo/cketh.png";
+import Aptos from "../../assets/wallet-logo/aptos_logo.png";
 import Loading from "../../component/loading-wrapper/secondary-loader";
 import { propsContainer } from "../props-container";
-import {
-  MAGICEDEN_WALLET_KEY,
-  UNISAT_WALLET_KEY,
-  XVERSE_WALLET_KEY,
-} from "../../utils/common";
 
 const Footer = (props) => {
   const { Text } = Typography;
@@ -30,29 +23,7 @@ const Footer = (props) => {
   });
 
   const xverseBtcBalance = walletState.xverse.btcBalance;
-  const unisatAddress = walletState.unisat.address;
   const unisatBtcBalance = walletState.unisat.btcBalance;
-  const airDropPoints = constantState.airPoints;
-  const activeWallets = reduxState.wallet.active;
-
-  const [screenDimensions, setScreenDimensions] = React.useState({
-    width: window.screen.width,
-    height: window.screen.height,
-  });
-
-  const getScreenDimensions = (e) => {
-    const width = window.innerWidth;
-    const height = window.innerHeight;
-
-    setScreenDimensions({ width, height });
-  };
-
-  useEffect(() => {
-    window.addEventListener("resize", getScreenDimensions);
-    return () => {
-      window.removeEventListener("resize", getScreenDimensions);
-    };
-  });
 
   gsap.to(".round", {
     rotation: 360,
@@ -79,8 +50,8 @@ const Footer = (props) => {
                   src={Aptos}
                   alt="noimage"
                   style={{ justifyContent: "center" }}
-                  width={breakpoints.xs ? "25dvw" : "35dvw"}
-                  height={breakpoints.xs && "25px"}
+                  width={"20px"}
+                  height={"20px"}
                 />
                 <Text
                   className={`gradient-text-one ${
@@ -110,8 +81,8 @@ const Footer = (props) => {
                   src={Bitcoin}
                   alt="noimage"
                   style={{ justifyContent: "center" }}
-                  width={breakpoints.xs ? "25dvw" : "35dvw"}
-                  height={breakpoints.xs && "25px"}
+                  width={"25px"}
+                  height={"25px"}
                 />
                 <Text
                   className={`gradient-text-one ${
@@ -128,77 +99,26 @@ const Footer = (props) => {
         </Col>
 
         <Col>
-          <Loading
-            spin={!constantState.ethvalue}
-            indicator={
-              <TailSpin stroke="#6a85f1" alignmentBaseline="central" />
-            }
-          >
-            {constantState.ethvalue ? (
-              <Flex gap={5} align="center">
-                <img
-                  className="round"
-                  src={Eth}
-                  alt="noimage"
-                  style={{ justifyContent: "center" }}
-                  width={breakpoints.xs ? "25dvw" : "35dvw"}
-                  height={breakpoints.xs && "25px"}
-                />
-                <Text
-                  className={`gradient-text-one ${
-                    breakpoints.xs ? "font-xmsmall" : "font-small"
-                  } heading-one`}
-                >
-                  {USDollar.format(constantState.ethvalue)}
-                </Text>
-              </Flex>
-            ) : (
-              ""
-            )}
-          </Loading>
+          <Flex gap={5} align="center">
+            <img
+              className="round"
+              src={Bitcoin_Orange}
+              alt="noimage"
+              style={{ justifyContent: "center" }}
+              width={"23px"}
+              height={"23px"}
+            />
+            <Text className="gradient-text-one font-size-20 heading-one">
+              {unisatBtcBalance ? (
+                <>{unisatBtcBalance} </>
+              ) : xverseBtcBalance ? (
+                <>{xverseBtcBalance} </>
+              ) : (
+                0
+              )}
+            </Text>
+          </Flex>
         </Col>
-
-        <Col>
-          {screenDimensions.width >= 992 && (
-            <Flex gap={5} align="center">
-              <img
-                className="round airdrop_claimed"
-                src={claimed}
-                alt="noimage"
-                style={{ justifyContent: "center" }}
-                width={breakpoints.xs ? "25dvw" : "35dvw"}
-                height={breakpoints.xs && "25px"}
-              />{" "}
-              <Text className="gradient-text-one font-small heading-one">
-                {airDropPoints !== null ? airDropPoints : 0}
-              </Text>
-            </Flex>
-          )}
-        </Col>
-
-        {activeWallets.includes(UNISAT_WALLET_KEY) ||
-        activeWallets.includes(XVERSE_WALLET_KEY) ||
-        activeWallets.includes(MAGICEDEN_WALLET_KEY) ? (
-          <Col>
-            <Flex gap={5} align="center">
-              <img
-                className="round"
-                src={Bitcoin_Orange}
-                alt="noimage"
-                style={{ justifyContent: "center" }}
-                width={breakpoints.xs ? "25dvw" : "35dvw"}
-                height={breakpoints.xs && "25px"}
-              />
-              <Text className="gradient-text-one font-size-20 heading-one">
-                {unisatAddress ? (
-                  <>{unisatBtcBalance} </>
-                ) : (
-                  <>{xverseBtcBalance} </>
-                )}
-              </Text>
-            </Flex>
-          </Col>
-        ) : null}
       </Row>
     </>
   );

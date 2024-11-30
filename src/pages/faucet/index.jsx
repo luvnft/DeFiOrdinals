@@ -1,131 +1,116 @@
-import { Principal } from "@dfinity/principal";
-import { Col, Popconfirm, Row, Tooltip } from "antd";
+import { Aptos, AptosConfig, Network } from "@aptos-labs/ts-sdk";
+import { useWallet } from "@aptos-labs/wallet-adapter-react";
+import { Col, Row } from "antd";
 import { useEffect, useState } from "react";
-import claimed from "../../assets/airdrop/claimed.png";
-import unclaimed from "../../assets/airdrop/uncliamed.png";
-import CustomButton from "../../component/Button";
-import { StatCard } from "../../component/card";
-import WalletUI from "../../component/download-wallets-UI";
 import Notify from "../../component/notification";
 import { propsContainer } from "../../container/props-container";
-import { setAirDropData, setAirPoints } from "../../redux/slice/constant";
+import { getAptosClient } from "../../utils/aptosClient";
+import { client, contractAddress } from "../../utils/aptosService";
 
 const Faucet = (props) => {
-  const { reduxState, dispatch, isPlugError } = props.redux;
-  const { location } = props.router;
-  const affiliateCanister = reduxState.constant.affiliateCanister;
-  const airDropData = reduxState.constant.airDropData;
-  const airPoints = reduxState.constant.airPoints;
+  const { reduxState } = props.redux;
+  const { signAndSubmitTransaction, connected, connect, wallets, account } =
+    useWallet();
   const walletState = reduxState.wallet;
-  const activeWallet = reduxState.wallet.active;
-  const searchParams = new URLSearchParams(location.search);
-  const referralCode = searchParams.get("referral");
+  const petraAddress = walletState.petra.address;
 
-  let plugAddress = walletState.plug.principalId;
-  const xverseAddress = walletState.xverse.ordinals.address;
-  const unisatAddress = walletState.unisat.address;
-  const magicEdenAddress = walletState.magicEden.ordinals.address;
+  // console.log("connected", connected);
+  // console.log("wallet", wallets[0].name);
+  // const [account, setAccount] = useState(null);
+  const [petraAccount, setAccount] = useState(null);
+  const [transactionResult, setTransactionResult] = useState(null);
+  const [gotchiName, setGotchiName] = useState("Abishek006");
 
-  const airdrop = process.env.REACT_APP_AIRDROP;
+  const config = new AptosConfig({
+    network: Network.DEVNET,
+  });
+  const aptosClient = new Aptos(config);
 
-  const [unclaimedPoints, setUnclaimedPoints] = useState(0);
-
-  const fetchAirDrop = async () => {
+  const connectWallet = async () => {
     try {
-      const airDropData = await affiliateCanister.getAirDrops(
-        Principal.fromText(plugAddress)
-      );
-      if (airDropData.ordinalAddress) {
-        dispatch(setAirDropData(airDropData));
+      const aptosClient = getAptosClient(Network.DEVNET);
+      const payload = {
+        type: "entry_function_payload",
+        function:
+          "0x7b8a71405e76e1a3cccc7e9f5f01d401b466f02d7731dc753afa8a2b9ac7bc68::borrow::get_all_borrow_requests",
+        arguments: [petraAddress], // Add function arguments here
+        type_arguments: [],
+      };
+      // console.log("payload", payload);
+      // console.log("client", aptosClient);
+      const response = await aptosClient.view(payload);
+      // console.log("response", response);
+    } catch (error) {
+      console.log("Failed to fetch resource:", error);
+    }
+  };
+
+  // useEffect(() => {
+  //   (async () => {
+  //     try {
+  //       const payload = {
+  //         type: "entry_function_payload",
+  //         function: `${contractAddress}::main::get_aptogotchi`,
+  //         arguments: [account.address], // Add function arguments here
+  //         type_arguments: [],
+  //       };
+  //       const response = await aptosClient.view(payload);
+  //       console.log("response", response);
+  //     } catch (error) {
+  //       console.log("Failed to fetch resource:", error);
+  //     }
+  //   })();
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, []);
+
+  // console.log("account", account);
+  // console.log("transactionResult", transactionResult);
+
+  const handleCreateAptogotchi = async () => {
+    if (connected) {
+      try {
+        const payload = {
+          type: "entry_function_payload",
+          function: `${contractAddress}::main::create_aptogotchi`,
+          arguments: [
+            "Abiii007",
+            Math.floor(Math.random() * Number(5)),
+            Math.floor(Math.random() * Number(6)),
+            Math.floor(Math.random() * Number(4)),
+          ], // Add function arguments here
+          type_arguments: [],
+        };
+
+        const transaction = await window.aptos.signAndSubmitTransaction(
+          payload
+        );
+        // console.log("transaction", transaction);
+        await aptosClient.waitForTransaction(transaction.hash);
+        setTransactionResult(transaction);
+      } catch (error) {
+        console.log("Create Aptogochi error", error);
+        Notify("warning", error.message);
       }
-    } catch (error) {
-      console.log("Get Air Drop error", error);
+    } else {
+      Notify("warning", "Wallet not connected error");
     }
   };
 
-  const handleRegister = async () => {
-    try {
-      await affiliateCanister.setAirdrops(
-        xverseAddress
-          ? xverseAddress
-          : unisatAddress
-          ? unisatAddress
-          : magicEdenAddress,
-        referralCode ? referralCode : "NONE"
-      );
-      await fetchAirDrop();
-    } catch (error) {
-      console.log("set Air Drop Error", error);
-    }
-  };
-
-  const handleClaim = async () => {
-    try {
-      if (unclaimedPoints >= 10) {
-        const claimRes = await affiliateCanister.claimPoints();
-        if (claimRes) {
-          await fetchUserPoints();
-          await fetchUnclaimedPoints();
-          Notify("success", `Successfully claimed ${claimRes}`);
-        } else {
-          Notify("error", `Something went wrong, try again later!`);
-        }
-      } else {
-        Notify("warning", "You should have atleast 10 points to claim!");
-      }
-    } catch (error) {
-      console.log("claim Error", error);
-    }
-  };
-
-  const fetchUserPoints = async () => {
-    try {
-      const claimedPoints = await affiliateCanister.getUserPoints(
-        Principal.fromText(plugAddress)
-      );
-      dispatch(setAirPoints(Number(claimedPoints)));
-    } catch (error) {
-      console.log("Get Air Drop error", error);
-    }
-  };
-
-  const fetchUnclaimedPoints = async () => {
-    try {
-      const unclaimedPoints = await affiliateCanister.getUnclaimPoints(
-        Principal.fromText(plugAddress)
-      );
-      setUnclaimedPoints(Number(unclaimedPoints));
-    } catch (error) {
-      console.log("Get Air Drop error", error);
-    }
-  };
-
-  useEffect(() => {
-    (async () => {
-      if (
-        plugAddress &&
-        affiliateCanister &&
-        (xverseAddress || unisatAddress || magicEdenAddress)
-      ) {
-        await fetchUnclaimedPoints();
-      }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    affiliateCanister,
-    plugAddress,
-    unisatAddress,
-    xverseAddress,
-    magicEdenAddress,
-  ]);
-
-  useEffect(() => {
-    if (activeWallet.length === 0) {
-      dispatch(setAirPoints(0));
-      dispatch(setAirDropData({}));
-      setUnclaimedPoints(0);
-    }
-  }, [activeWallet, dispatch]);
+  // useEffect(() => {
+  //   if (!connected) {
+  //     try {
+  //       connect(wallets[0].name);
+  //     } catch (error) {
+  //       console.log("app connection error", error);
+  //     } finally {
+  //       // Notify("success", "Petra connected!");
+  //     }
+  //   }
+  //   // const newAccount = await createAccount();
+  //   // // newAccount.accountAddress.hexString = petraAddress;
+  //   // setAccount(newAccount);
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [petraAddress]);
 
   return (
     <>
@@ -135,7 +120,19 @@ const Faucet = (props) => {
         </Col>
       </Row>
 
-      <Row justify={"center"}>
+      <Row>
+        {/* <CustomButton
+          className={
+            "font-weight-600 letter-spacing-small font-medium btn-height click-btn"
+          }
+          title="Create gotchi"
+          size="medium"
+          // onClick={handleCreateAptogotchi}
+          onClick={connectWallet}
+        /> */}
+      </Row>
+
+      {/* <Row justify={"center"}>
         <Col>
           {activeWallet?.length === 2 && !isPlugError ? (
             <>
@@ -268,7 +265,7 @@ const Faucet = (props) => {
             <WalletUI isAirdrop={true} isPlugError={isPlugError} />
           )}
         </Col>
-      </Row>
+      </Row> */}
     </>
   );
 };

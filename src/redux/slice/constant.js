@@ -19,9 +19,17 @@ const state = {
   withdrawAgent: null,
   affiliateCanister: null,
   LendRequests: null,
-  allAssets: [],
+  userAssets: null,
   isPlugError: false,
-  approvedCollections: null
+  approvedCollections: ["", "", "", "", "", "", "", "", "", "", "", ""],
+  dashboardData: {},
+  maxOffers: {},
+  offers: null,
+  userCollateral: null,
+  borrowCollateral: null,
+  allBorrowRequest: null,
+  allLendRequest: null,
+  userOffers: null
 };
 
 const constantSlice = createSlice({
@@ -104,8 +112,40 @@ const constantSlice = createSlice({
       state.LendRequests = action.payload;
     },
 
-    setAllAssets: (state, action) => {
-      state.allAssets = action.payload;
+    setUserAssets: (state, action) => {
+      state.userAssets = action.payload;
+    },
+
+    setMaxOffers: (state, action) => {
+      state.maxOffers = action.payload;
+    },
+
+    setOffers: (state, action) => {
+      state.offers = action.payload;
+    },
+
+    setUserOffers: (state, action) => {
+      state.userOffers = action.payload;
+    },
+
+    setUserCollateral: (state, action) => {
+      state.userCollateral = action.payload;
+    },
+
+    setBorrowCollateral: (state, action) => {
+      state.borrowCollateral = action.payload;
+    },
+
+    setAllBorrowRequest: (state, action) => {
+      state.allBorrowRequest = action.payload;
+    },
+
+    setAllLendRequest: (state, action) => {
+      state.allLendRequest = action.payload;
+    },
+
+    setDashboardData: (state, action) => {
+      state.dashboardData = action.payload;
     },
   },
 });
@@ -114,11 +154,16 @@ export const {
   setLoading,
   setLoaderTip,
   setCollection,
+  setAllLendRequest,
   setBtcValue,
   setAirDropData,
   setAirPoints,
+  setDashboardData,
+  setAllBorrowRequest,
   setCollectionName,
+  setBorrowCollateral,
   setLendHeader,
+  setUserCollateral,
   setAgent,
   setLendRequests,
   setCkBtcAgent,
@@ -128,7 +173,10 @@ export const {
   setCkBtcActorAgent,
   setCkEthActorAgent,
   setwithdrawAgent,
-  setAllAssets,
+  setMaxOffers,
+  setOffers,
+  setUserAssets,
+  setUserOffers,
   setAffiliateCanister,
   setApprovedCollection
 } = constantSlice.actions;

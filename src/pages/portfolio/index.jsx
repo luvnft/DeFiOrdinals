@@ -1,258 +1,536 @@
 import {
-  Badge,
   Col,
-  Descriptions,
+  Divider,
+  Dropdown,
   Flex,
-  Grid,
-  Popconfirm,
+  Radio,
   Row,
+  Statistic,
   Tooltip,
   Typography,
 } from "antd";
-import Title from "antd/es/typography/Title";
-import axios from "axios";
 import React, { useEffect, useState } from "react";
-import { FaRegSmileWink } from "react-icons/fa";
-import { FcInfo } from "react-icons/fc";
-import { ImSad } from "react-icons/im";
-import { MdOutlineCancel, MdTour } from "react-icons/md";
-import { RiCheckboxCircleFill } from "react-icons/ri";
+import { BiSolidSpreadsheet } from "react-icons/bi";
+import { FaHandHolding, FaMoneyBillAlt } from "react-icons/fa";
+import { FcApproval, FcInfo } from "react-icons/fc";
+import { FiArrowDownLeft } from "react-icons/fi";
+import { HiMiniReceiptPercent } from "react-icons/hi2";
+import { MdContentCopy, MdDeleteForever, MdTour } from "react-icons/md";
 import { Bars } from "react-loading-icons";
-import CardDisplay from "../../component/card";
+import Aptos from "../../assets/wallet-logo/aptos_logo.png";
+import CustomButton from "../../component/Button";
 import WalletUI from "../../component/download-wallets-UI";
-import Loading from "../../component/loading-wrapper/secondary-loader";
 import ModalDisplay from "../../component/modal";
-import Notify from "../../component/notification";
+import TableComponent from "../../component/table";
 import { propsContainer } from "../../container/props-container";
-import { setLoading } from "../../redux/slice/constant";
 import {
-  API_METHODS,
-  IS_USER,
-  MAGICEDEN_WALLET_KEY,
-  PLUG_WALLET_KEY,
-  UNISAT_WALLET_KEY,
-  XVERSE_WALLET_KEY,
-  allWallets,
-  apiUrl,
+  Capitalaize,
+  DateTimeConverter,
+  daysDifferenceFromNow,
+  getTimeAgo,
+  sliceAddress,
 } from "../../utils/common";
+import { IoWarningSharp } from "react-icons/io5";
 
 const Portfolio = (props) => {
-  const { api_agent } = props.wallet;
-  const { reduxState, dispatch } = props.redux;
+  const { reduxState } = props.redux;
   const activeWallet = reduxState.wallet.active;
-  const principalId = reduxState.wallet.plug.principalId;
-  const xverseWallet = reduxState.wallet.xverse;
-  const unisatWallet = reduxState.wallet.unisat;
-  const magicEdenWallet = reduxState.wallet.magicEden;
+  const userAssets = reduxState.constant.userAssets;
+  // const xverseWallet = reduxState.wallet.xverse;
+  // const unisatWallet = reduxState.wallet.unisat;
+  // const magicEdenWallet = reduxState.wallet.magicEden;
   const walletState = reduxState.wallet;
-  const xverseAddress = walletState.xverse.ordinals.address;
-  const unisatAddress = walletState.unisat.address;
-  const magicEdenAddress = walletState.magicEden.ordinals.address;
+  const btcValue = reduxState.constant.btcvalue;
+  // const xverseAddress = walletState.xverse.ordinals.address;
+  // const unisatAddress = walletState.unisat.address;
+  // const magicEdenAddress = walletState.magicEden.ordinals.address;
   const petraAddress = walletState.petra.address;
+  // const martinAddress = walletState.martin.address;
+  // const nightltAddress = walletState.nightly.address;
+  const dashboardData = reduxState.constant.dashboardData;
+  const allBorrowRequest = reduxState.constant.allBorrowRequest;
+  const allLendRequest = reduxState.constant.allLendRequest;
 
   const { Text } = Typography;
-  const { useBreakpoint } = Grid;
-  const breakPoint = useBreakpoint();
+  const { Countdown } = Statistic;
+  // const { useBreakpoint } = Grid;
   const [copy, setCopy] = useState("Copy");
-  const [isIcon, setIcon] = useState(false);
-  const [imageUrl, setImageUrl] = useState({});
-  const [imageType, setImageType] = useState({});
-  const [borrowData, setBorrowData] = useState(null);
-  const [isPopupOpen, setPopupOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [handleSupplyModal, setHandleSupplyModal] = useState(false);
+  const [supplyModalItems, setSupplyModalItems] = useState(null);
+  const [userOffers, setUserOffers] = useState(null);
+  const [userBorrows, setUserBorrows] = useState(null);
+  const [userLends, setUserLends] = useState(null);
+  const [radioBtn, setRadioBtn] = useState("Assets");
   const [downloadWalletModal, setDownloadWalletModal] = useState(false);
-  const [isDeleteIcon, setDeleteIcon] = useState(false);
-  const [lendRequests, setLendRequests] = useState(null);
   const [enableTour, setEnableTour] = useState(false);
 
-  const WAHEED_ADDRESS = process.env.REACT_APP_WAHEED_ADDRESS;
   const TOUR_SVG = process.env.REACT_APP_TOUR_SVG;
   const TOUR_ID = process.env.REACT_APP_TOUR_ID;
-  const ASSET_SERVER = process.env.REACT_APP_ASSET_SERVER;
+  const CONTENT_API = process.env.REACT_APP_ORDINALS_CONTENT_API;
+  const BTC_ZERO = process.env.REACT_APP_BTC_ZERO;
 
   const handleTour = () => {
     localStorage.setItem("isTourEnabled", true);
     setEnableTour(!enableTour);
   };
 
-  const deleteLoanRequest = async (inscriptionId) => {
-    try {
-      dispatch(setLoading(true));
-      const deleteRequest = await api_agent.removeLoanRequest(inscriptionId);
-      dispatch(setLoading(false));
-      if (deleteRequest) {
-        Notify("success", "Deleted loan request succcessfully");
-        const remainingData = lendRequests.filter(
-          (data) => data.inscriptionid !== inscriptionId
-        );
-        setLendRequests(remainingData);
-      }
-    } catch (error) {
-      Notify("error", error.message);
-    }
+  const handleOk = () => {
+    setIsModalOpen(false);
+    setHandleSupplyModal(false);
   };
-  useEffect(() => {
-    (async () => {
-      if (api_agent && activeWallet.includes(PLUG_WALLET_KEY)) {
-        try {
-          const getLoansReq = await api_agent.getLoanRequest(principalId);
-          setLendRequests(getLoansReq.flat());
-        } catch (error) {
-          Notify("error", error.message);
-        }
-      }
-    })();
-    if (!principalId) {
-      setLendRequests(null);
-    }
-  }, [activeWallet, activeWallet.length, api_agent, principalId]);
 
-  useEffect(() => {
-    (async () => {
-      if (
-        api_agent &&
-        (activeWallet.includes(XVERSE_WALLET_KEY) ||
-          activeWallet.includes(UNISAT_WALLET_KEY) ||
-          activeWallet.includes(MAGICEDEN_WALLET_KEY))
-      ) {
-        try {
-          const result = await API_METHODS.get(
-            `${apiUrl.Asset_server_base_url}/api/v1/fetch/assets/${
-              IS_USER
-                ? xverseAddress
-                  ? xverseAddress
-                  : unisatAddress
-                  ? unisatAddress
-                  : magicEdenAddress
-                : WAHEED_ADDRESS
-            }`
-          );
-          if (result.data.data.length) {
-            const filteredData = result.data.data.filter(
-              (asset) =>
-                asset.mimeType === "text/html" ||
-                asset.mimeType === "image/webp" ||
-                asset.mimeType === "image/jpeg" ||
-                asset.mimeType === "image/png"
-            );
-            const isFromApprovedAssets = filteredData.map(async (asset) => {
-              return new Promise(async (resolve, _) => {
-                const result = await axios.get(
-                  `${ASSET_SERVER}/api/v1/fetch/asset/${asset.id}`
-                );
-                resolve({
-                  ...result.data,
-                  ...asset,
-                });
-              });
-            });
-            const revealedPromise = await Promise.all(isFromApprovedAssets);
-            const finalAssets = revealedPromise.filter(
-              (asset) => asset.success
-            );
-            const fetchCollectionDetails = finalAssets.map(async (asset) => {
-              return new Promise(async (resolve, _) => {
-                const result = await axios.get(
-                  `${ASSET_SERVER}/api/v1/fetch/collection/${asset.data.collectionName}`
-                );
-                resolve({
-                  ...result.data.data,
-                  ...asset,
-                });
-              });
-            });
-            const finalPromise = await Promise.all(fetchCollectionDetails);
-            finalPromise?.length
-              ? setBorrowData(finalPromise)
-              : setBorrowData([]);
-            // setBorrowData(finalPromise);
-          }
-        } catch (error) {
-          setBorrowData([]);
-        }
-      }
-    })();
-  }, [
-    ASSET_SERVER,
-    WAHEED_ADDRESS,
-    activeWallet,
-    api_agent,
-    dispatch,
-    magicEdenAddress,
-    unisatAddress,
-    xverseAddress,
-  ]);
+  const handleCancel = () => {
+    setIsModalOpen(false);
+    setHandleSupplyModal(false);
+  };
+
+  const portfolioCards = [
+    {
+      title: "Active Lendings",
+      icon: FaHandHolding,
+      value: Number(dashboardData.activeLendings),
+    },
+    {
+      title: "Active Borrowings",
+      icon: FiArrowDownLeft,
+      value: Number(dashboardData.activeBorrows),
+    },
+    {
+      title: "Completed Loans",
+      icon: BiSolidSpreadsheet,
+      value: Number(dashboardData.completedLoans),
+    },
+    {
+      title: "Lendings Value",
+      icon: FaMoneyBillAlt,
+      value: Number(dashboardData.lendingValue),
+    },
+    {
+      title: "Borrowings Value",
+      icon: FaMoneyBillAlt,
+      value: Number(dashboardData.borrowValue),
+    },
+    {
+      title: "Profit Earned",
+      icon: HiMiniReceiptPercent,
+      value: Number(dashboardData.profitEarned),
+    },
+  ];
+
+  const options = [
+    {
+      key: "1",
+      label: (
+        <CustomButton
+          className={"click-btn font-weight-600 letter-spacing-small"}
+          title={"Details"}
+          size="medium"
+          onClick={() => setIsModalOpen(true)}
+        />
+      ),
+    },
+  ];
+
+  const assetTableColumns = [
+    {
+      key: "Asset",
+      title: "Asset",
+      align: "center",
+      dataIndex: "asset",
+      render: (_, obj) => (
+        <>
+          <Flex gap={5} vertical align="center">
+            {obj.contentType === "image/webp" ||
+            obj.contentType === "image/jpeg" ||
+            obj.contentType === "image/png" ? (
+              <img
+                src={`${CONTENT_API}/content/${obj.id}`}
+                alt={`${obj.id}-borrow_image`}
+                className="border-radius-30"
+                width={70}
+                height={70}
+              />
+            ) : obj.contentType === "image/svg" ||
+              obj.contentType === "text/html;charset=utf-8" ||
+              obj.contentType === "text/html" ||
+              obj.contentType === "image/svg+xml" ? (
+              <iframe
+                loading="lazy"
+                width={"80px"}
+                height={"80px"}
+                style={{ border: "none", borderRadius: "20%" }}
+                src={`${CONTENT_API}/content/${obj.id}`}
+                title="svg"
+                sandbox="allow-scripts"
+              >
+                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                  <image href={`${CONTENT_API}/content/${obj.id}`} />
+                </svg>
+              </iframe>
+            ) : (
+              <img
+                src={`${
+                  obj?.meta?.collection_page_img_url
+                    ? obj?.meta?.collection_page_img_url
+                    : `${process.env.PUBLIC_URL}/collections/${obj?.collectionSymbol}`
+                }`}
+                onError={(e) =>
+                  (e.target.src = `${process.env.PUBLIC_URL}/collections/${obj?.collectionSymbol}.png`)
+                }
+                alt={`${obj.id}-borrow_image`}
+                className="border-radius-30"
+                width={70}
+                height={70}
+              />
+            )}
+            {obj.displayName}
+          </Flex>
+        </>
+      ),
+    },
+    {
+      key: "Floor Price",
+      title: "Floor price",
+      align: "center",
+      dataIndex: "value",
+      render: (_, obj) => {
+        return (
+          <>
+            {obj.collection.floorPrice ? (
+              <Flex vertical align="center">
+                <Flex
+                  align="center"
+                  gap={3}
+                  className="text-color-one font-small letter-spacing-small"
+                >
+                  <img src={Aptos} alt="noimage" width={20} height={20} />
+                  {(obj.collection.floorPrice / BTC_ZERO).toFixed(2)}
+                </Flex>
+                <span className="text-color-two font-xsmall letter-spacing-small">
+                  ${" "}
+                  {(
+                    (Number(obj.collection.floorPrice) / BTC_ZERO) *
+                    btcValue
+                  ).toFixed(2)}
+                </span>
+              </Flex>
+            ) : (
+              "-"
+            )}
+          </>
+        );
+      },
+    },
+    {
+      key: "APY",
+      title: "APY",
+      align: "center",
+      dataIndex: "category_id",
+      render: (id, obj) => {
+        return <Text className="text-color-two font-small">5%</Text>;
+      },
+    },
+    {
+      key: "Can be collateral",
+      title: "Can be collateral",
+      align: "center",
+      dataIndex: "link",
+      render: (_, obj) => (
+        <>
+          <FcApproval color="orange" size={30} />
+        </>
+      ),
+    },
+    {
+      key: "Action Buttons",
+      title: " ",
+      align: "center",
+      render: (_, obj) => {
+        return (
+          <Flex gap={5}>
+            <Dropdown.Button
+              className="dbButtons-grey font-weight-600 letter-spacing-small"
+              trigger={"click"}
+              onClick={() => setHandleSupplyModal(true)}
+              menu={{
+                items: options,
+                onClick: () => setSupplyModalItems(obj),
+              }}
+            >
+              Supply
+            </Dropdown.Button>
+          </Flex>
+        );
+      },
+    },
+  ];
+
+  const userRequestColumns = [
+    {
+      key: "ordinal",
+      title: "Ordinal",
+      align: "center",
+      dataIndex: "ordinal",
+      render: (_, obj) => (
+        <Flex vertical justify="center" align="center">
+          <img
+            className="border-radius-8"
+            alt={`lend_image`}
+            src={obj.contentURL}
+            onError={(e) =>
+              (e.target.src = `${process.env.PUBLIC_URL}/collections/${obj.collectionSymbol}.png`)
+            }
+            width={70}
+          />
+          <span className={`font-xsmall text-color-two letter-spacing-small`}>
+            #{obj.inscriptionNumber}{" "}
+          </span>
+        </Flex>
+      ),
+    },
+    {
+      key: "loanAmount",
+      title: "Loan Amount",
+      align: "center",
+      dataIndex: "loanAmount",
+      render: (_, obj) => (
+        <Flex align="center" justify="center" gap={3}>
+          <img src={Aptos} alt="noimage" width="20px" />{" "}
+          <Text className="text-color-one">
+            {(obj.loan_amount / BTC_ZERO).toFixed(2)}{" "}
+          </Text>
+        </Flex>
+      ),
+    },
+    {
+      key: "platformFee",
+      title: "Platform Fee",
+      align: "center",
+      dataIndex: "platformFee",
+      render: (_, obj) => (
+        <Flex align="center" justify="center" gap={3}>
+          <img src={Aptos} alt="noimage" width="20px" />{" "}
+          <Text className="text-color-one">
+            {(obj.platform_fee / BTC_ZERO).toFixed(2)}{" "}
+          </Text>
+        </Flex>
+      ),
+    },
+    {
+      key: "repayAmount",
+      title: "Repay Amount",
+      align: "center",
+      dataIndex: "repayAmount",
+      render: (_, obj) => (
+        <Flex align="center" justify="center" gap={3}>
+          <img src={Aptos} alt="noimage" width="20px" />{" "}
+          <Text className="text-color-one">
+            {((obj.repayment_amount - obj.loan_amount) / BTC_ZERO).toFixed(2)}{" "}
+          </Text>
+        </Flex>
+      ),
+    },
+    {
+      key: "Date",
+      title: "Date",
+      align: "center",
+      dataIndex: "loanTime",
+      render: (_, obj) => {
+        const [date, time] = DateTimeConverter(Number(obj.timestamp) * 1000);
+        return (
+          <Flex vertical gap={3}>
+            <Text
+              className={`text-color-one font-size-16 letter-spacing-small`}
+            >
+              {date}, {time}
+            </Text>
+            <Text
+              className={`text-color-one font-size-16 letter-spacing-small`}
+            >
+              {getTimeAgo(Number(obj.timestamp) * 1000)}
+            </Text>
+          </Flex>
+        );
+      },
+    },
+    {
+      key: "action",
+      title: " ",
+      align: "center",
+      dataIndex: "action",
+      render: (_, obj) => <MdDeleteForever color="red" size={25} />,
+    },
+  ];
+
+  const BorrowLendColumns = [
+    {
+      key: "ordinal",
+      title: "Ordinal",
+      align: "center",
+      dataIndex: "ordinal",
+      render: (_, obj) => (
+        <Flex vertical justify="center" align="center">
+          <img
+            className="border-radius-8"
+            alt={`lend_image`}
+            src={obj.contentURL}
+            onError={(e) =>
+              (e.target.src = `${process.env.PUBLIC_URL}/collections/${obj.collectionSymbol}.png`)
+            }
+            width={70}
+          />
+          <span className={`font-xsmall text-color-two letter-spacing-small`}>
+            #{obj.inscriptionNumber}{" "}
+          </span>
+        </Flex>
+      ),
+    },
+    {
+      key: "loanAmount",
+      title: "Loan Amount",
+      align: "center",
+      dataIndex: "loanAmount",
+      render: (_, obj) => (
+        <Flex align="center" justify="center" gap={3}>
+          <img src={Aptos} alt="noimage" width="20px" />{" "}
+          <Text className="text-color-one">
+            {(obj.loan_amount / BTC_ZERO).toFixed(2)}{" "}
+          </Text>
+        </Flex>
+      ),
+    },
+    {
+      key: "platformFee",
+      title: "Platform Fee",
+      align: "center",
+      dataIndex: "platformFee",
+      render: (_, obj) => (
+        <Flex align="center" justify="center" gap={3}>
+          <img src={Aptos} alt="noimage" width="20px" />{" "}
+          <Text className="text-color-one">
+            {(obj.platform_fee / BTC_ZERO).toFixed(2)}{" "}
+          </Text>
+        </Flex>
+      ),
+    },
+    {
+      key: "repayAmount",
+      title: "Repay Amount",
+      align: "center",
+      dataIndex: "repayAmount",
+      render: (_, obj) => (
+        <Flex align="center" justify="center" gap={3}>
+          <img src={Aptos} alt="noimage" width="20px" />{" "}
+          <Text className="text-color-one">
+            {((obj.repayment_amount - obj.loan_amount) / BTC_ZERO).toFixed(2)}{" "}
+          </Text>
+        </Flex>
+      ),
+    },
+    {
+      key: "Date",
+      title: "Start Date / Time",
+      align: "center",
+      dataIndex: "loanTime",
+      render: (_, obj) => {
+        const [date, time] = DateTimeConverter(
+          Number(obj.loanstart_time) * 1000
+        );
+        return (
+          <Flex vertical gap={3}>
+            <Text
+              className={`text-color-one font-size-16 letter-spacing-small`}
+            >
+              {date}, {time}
+            </Text>
+            <Text
+              className={`text-color-one font-size-16 letter-spacing-small`}
+            >
+              {getTimeAgo(Number(obj.loanstart_time) * 1000)}
+            </Text>
+          </Flex>
+        );
+      },
+    },
+    {
+      key: "Date",
+      title: "End Date / Time",
+      align: "center",
+      dataIndex: "loanTime",
+      render: (_, obj) => {
+        const [date, time] = DateTimeConverter(Number(obj.loanend_time) * 1000);
+        return (
+          <Flex vertical gap={3}>
+            <Text
+              className={`text-color-one font-size-16 letter-spacing-small`}
+            >
+              {date}, {time}
+            </Text>
+            <Text
+              className={`text-color-one font-size-16 letter-spacing-small`}
+            >
+              <Countdown value={Number(obj.loanend_time) * 1000} />
+              {parseInt(
+                daysDifferenceFromNow(Number(obj.loanend_time) * 1000)
+              )}{" "}
+              days left
+            </Text>
+          </Flex>
+        );
+      },
+    },
+  ];
 
   useEffect(() => {
     if (activeWallet.length === 0) {
-      setBorrowData(null);
+      // setBorrowData(null);
     }
   }, [activeWallet]);
 
-  const renderWalletAddress = (address) => (
-    <>
-      {address ? (
-        <>
-          <Tooltip arrow title={copy} trigger={"hover"} placement="top">
-            <Text
-              onClick={() => {
-                navigator.clipboard.writeText(address);
-                setCopy("Copied");
-                setTimeout(() => {
-                  setCopy("Copy");
-                }, 2000);
-              }}
-              className="font-weight-600 letter-spacing-small font-medium text-color-two"
-            >
-              {address.slice(0, 9)}...
-              {address.slice(address.length - 9, address.length)}
-            </Text>
-          </Tooltip>
-        </>
-      ) : (
-        <Text className="font-weight-600 letter-spacing-small font-medium text-color-two">
-          ---
-        </Text>
-      )}
-    </>
-  );
+  const radioOptions = [
+    {
+      label: "Assets",
+      value: "Assets",
+    },
+    {
+      label: "Offers",
+      value: "Offers",
+    },
+    {
+      label: "Lendings",
+      value: "Lendings",
+      title: "Lendings",
+    },
+    {
+      label: "Borrowings",
+      value: "Borrowings",
+    },
+  ];
 
-  const walletItems = (wallet) => {
-    return [
-      {
-        label: (
-          <>
-            <Badge
-              color={activeWallet.includes(wallet) ? "green" : "red"}
-              status={activeWallet.includes(wallet) ? "processing" : "error"}
-              text={
-                <Text className="font-weight-600 letter-spacing-small font-medium text-color-one">
-                  {wallet.toUpperCase()} WALLET
-                </Text>
-              }
-            />
-          </>
-        ),
-        key: wallet,
-        children: (
-          <Row justify={"center"}>
-            <Col className="m-bottom">
-              {wallet === XVERSE_WALLET_KEY ? (
-                <>{renderWalletAddress(xverseWallet.ordinals?.address)}</>
-              ) : wallet === UNISAT_WALLET_KEY ? (
-                <>{renderWalletAddress(unisatWallet?.address)}</>
-              ) : wallet === MAGICEDEN_WALLET_KEY ? (
-                <>{renderWalletAddress(magicEdenWallet.ordinals?.address)}</>
-              ) : wallet === PLUG_WALLET_KEY ? (
-                <>{renderWalletAddress(principalId)}</>
-              ) : (
-                <>{renderWalletAddress(petraAddress)}</>
-              )}
-            </Col>
-          </Row>
-        ),
-      },
-    ];
-  };
+  useEffect(() => {
+    if (activeWallet.length && allBorrowRequest?.length) {
+      const userOfferReq = allBorrowRequest.filter(
+        (predict) => predict.borrower === petraAddress
+      );
+      setUserOffers(userOfferReq);
+    }
+  }, [activeWallet, allBorrowRequest, petraAddress]);
+
+  useEffect(() => {
+    if (activeWallet.length && allLendRequest?.length) {
+      const userLendReq = allLendRequest.filter(
+        (predict) => predict.lender === petraAddress
+      );
+
+      const userBorrowReq = allLendRequest.filter(
+        (predict) => predict.borrower === petraAddress
+      );
+
+      setUserLends(userLendReq);
+      setUserBorrows(userBorrowReq);
+    }
+  }, [activeWallet, allLendRequest, petraAddress]);
 
   return (
     <>
@@ -304,379 +582,197 @@ const Portfolio = (props) => {
         </Col>
       </Row>
 
+      <Row align={"middle"} className={activeWallet.length && "mt-15"}>
+        <Col md={24}>
+          <Flex className="page-box" align="center" gap={5}>
+            <FcInfo className="pointer" size={20} />
+            <Text className="text-color-two font-small">
+              Manage your offers, lending, and borrowing positions. Learn more.{" "}
+            </Text>
+          </Flex>
+        </Col>
+      </Row>
+
       {activeWallet.length ? (
-        <Row className="m-top-bottom" gutter={48}>
-          {allWallets.map((wallet, index) => {
+        // && Object.keys(dashboardData).length
+        <Row justify={"space-between"} gutter={12} className="mt-20">
+          {portfolioCards.map((card, index) => {
+            const { icon: Icon, title, value } = card;
             return (
-              <Col
-                xl={8}
-                lg={10}
-                md={12}
-                xs={24}
-                key={`${wallet.key}-${index}`}
-                className="m-top-bottom"
-              >
-                <Descriptions
-                  className="pointer box-shadow-one float-up"
-                  bordered
-                  layout="vertical"
-                  contentStyle={{ fontSize: "larger" }}
-                  labelStyle={{
-                    fontSize: "larger",
-                    letterSpacing: "2px",
-                    fontWeight: "bold",
-                  }}
-                  items={walletItems(wallet.key)}
-                />
+              <Col md={4} key={`${title}-${index}`}>
+                <Flex
+                  vertical
+                  className={`dash-cards-css box-shadow-white pointer`}
+                  justify="space-between"
+                >
+                  <Flex justify="space-between" align="center">
+                    <Text
+                      className={`gradient-text-one font-small letter-spacing-small`}
+                    >
+                      {title}
+                    </Text>
+                    <Icon
+                      size={25}
+                      color="grey"
+                      style={{
+                        marginTop: index === 0 ? "-13px" : "",
+                      }}
+                    />
+                  </Flex>
+                  <Flex
+                    gap={5}
+                    align="center"
+                    className={`text-color-two font-small letter-spacing-small`}
+                  >
+                    {title.includes("Value") ? (
+                      <img src={Aptos} alt="ckBtc" width={20} />
+                    ) : (
+                      ""
+                    )}{" "}
+                    {value ? value : 0}
+                  </Flex>
+                </Flex>
               </Col>
             );
           })}
         </Row>
       ) : (
-        <Row justify={"center"}>
-          <Col>
-            <button
-              type="button"
-              onClick={() => setDownloadWalletModal(true)}
-              className="dwnld-button"
-            >
-              <span className="button__text">Download Wallets</span>
-              <span className="button__icon">
-                <svg
-                  className="svg"
-                  data-name="Layer 2"
-                  id={TOUR_ID}
-                  viewBox="0 0 35 35"
-                  xmlns={TOUR_SVG}
-                >
-                  <path d="M17.5,22.131a1.249,1.249,0,0,1-1.25-1.25V2.187a1.25,1.25,0,0,1,2.5,0V20.881A1.25,1.25,0,0,1,17.5,22.131Z"></path>
-                  <path d="M17.5,22.693a3.189,3.189,0,0,1-2.262-.936L8.487,15.006a1.249,1.249,0,0,1,1.767-1.767l6.751,6.751a.7.7,0,0,0,.99,0l6.751-6.751a1.25,1.25,0,0,1,1.768,1.767l-6.752,6.751A3.191,3.191,0,0,1,17.5,22.693Z"></path>
-                  <path d="M31.436,34.063H3.564A3.318,3.318,0,0,1,.25,30.749V22.011a1.25,1.25,0,0,1,2.5,0v8.738a.815.815,0,0,0,.814.814H31.436a.815.815,0,0,0,.814-.814V22.011a1.25,1.25,0,1,1,2.5,0v8.738A3.318,3.318,0,0,1,31.436,34.063Z"></path>
-                </svg>
-              </span>
-            </button>
-            {/* <Text className="text-color-one font-medium text-decor-line value-one letter-spacing-small">
-            Download wallets
-          </Text> */}
-          </Col>
-        </Row>
+        ""
       )}
 
-      <Row align={"middle"}>
-        <Col>
-          <Flex align="center" gap={10}>
-            <Title level={2} className="gradient-text-one">
-              Loan Requests
-            </Title>
-            <Tooltip
-              color="purple"
-              title={
-                <span className="text-color-one">
-                  Connect 'PLUG' wallet to display your loans!
-                </span>
-              }
-            >
-              <FcInfo className="pointer mt-15" size={25} />
-            </Tooltip>
-          </Flex>
+      <Row align={"middle"} className={activeWallet.length && "mt-15"}>
+        <Col xs={24} md={24}>
+          <Divider className="m-top-bottom" />
         </Col>
       </Row>
 
-      {lendRequests === null ? (
-        <Row justify={"center"}>
-          <Flex justify="center" className="iconalignment">
-            <FaRegSmileWink className="text-color-one" size={25} />
-            <Text className="text-color-one font-large value-one letter-spacing-medium">
-              Connect Plug Wallet!
-            </Text>
-          </Flex>
-        </Row>
-      ) : (
-        <Row
-          justify={{
-            md: !lendRequests
-              ? "center"
-              : lendRequests.length === 0
-              ? "center"
-              : "start",
-            sm: "center",
+      <Row align={"middle"} justify={"center"} className={"mt-15"}>
+        <Radio.Group
+          className="radio-css"
+          options={radioOptions}
+          onChange={({ target: { value } }) => {
+            setRadioBtn(value);
           }}
-          gutter={18}
-        >
-          {principalId && lendRequests?.length !== 0 ? (
-            lendRequests.map((card, index) => {
-              if (!imageUrl[index]) {
-                (async () => {
-                  const apiData = await API_METHODS.get(
-                    `${apiUrl.Api_base_url}/${card.inscriptionid}`
-                  );
-                  setImageUrl((existing) => {
-                    return {
-                      ...existing,
-                      [index]: `${process.env.REACT_APP_ORDINALS_CONTENT_API}/content/${apiData.data.id}`,
-                    };
-                  });
-
-                  setImageType((existing) => {
-                    return {
-                      ...existing,
-                      [index]: apiData.data.mime_type,
-                    };
-                  });
-                })();
-              }
-
-              return (
-                <>
-                  <Col
-                    key={`${card.name}-${card.inscriptionid}`}
-                    xs={24}
-                    sm={12}
-                    md={12}
-                    lg={8}
-                    xl={6}
-                  >
-                    <CardDisplay
-                      onMouseEnter={() => {
-                        setIcon(
-                          `${card.name}-${card.inscriptionid}-${card.amount}-${card.lender_profit}-${card.repayment_amount}`
-                        );
-                      }}
-                      onMouseLeave={() => {
-                        if (!isPopupOpen) setIcon(null);
-                      }}
-                      cover={
-                        imageType[index] === "text/html" ? (
-                          <iframe
-                            title="lend_image"
-                            height={300}
-                            src={imageUrl[index]}
-                          />
-                        ) : (
-                          <img
-                            src={imageUrl[index]}
-                            alt={`${card}`}
-                            width={250}
-                            height={300}
-                          />
-                        )
-                      }
-                      hoverable={true}
-                      bordered={false}
-                      className={
-                        "card-bg dashboard-card-padding ant-card-delete-icon m-top-bottom cardrelative"
-                      }
-                    >
-                      <Col className="cardabsolute absoluteTop absoluteleft gradient-bg">
-                        <Text className="heading-one font-small text-color-one iconalignment">
-                          {card.name} <RiCheckboxCircleFill color="blue" />
-                        </Text>
-                      </Col>
-                      <Col className="cardabsolute absolutetop-icon absoluteleft-icon z-index">
-                        {isIcon ===
-                        `${card.name}-${card.inscriptionid}-${card.amount}-${card.lender_profit}-${card.repayment_amount}` ? (
-                          <Tooltip
-                            title="cancel request"
-                            open={!isPopupOpen && isDeleteIcon}
-                          >
-                            <Popconfirm
-                              onOpenChange={(e) => {
-                                setPopupOpen(e);
-                                if (!e) setIcon(null);
-                              }}
-                              className="z-index"
-                              color="black"
-                              placement="top"
-                              style={{ color: "white" }}
-                              title={
-                                <span className="font-small heading-one text-color-two">
-                                  Are you sure want to delete ?
-                                </span>
-                              }
-                              okText="Yes"
-                              cancelText="No"
-                              onConfirm={() => {
-                                deleteLoanRequest(card.inscriptionid);
-                              }}
-                            >
-                              <MdOutlineCancel
-                                color="red"
-                                onMouseEnter={() => setDeleteIcon(true)}
-                                onMouseLeave={() => setDeleteIcon(false)}
-                                size={35}
-                              />
-                            </Popconfirm>
-                          </Tooltip>
-                        ) : null}
-                      </Col>
-
-                      <Row justify={"center"}>
-                        <Text className="heading-one font-large text-color-one">
-                          {card.name}
-                        </Text>
-                      </Row>
-                      <Row justify={"space-between"}>
-                        <Col>
-                          <Text className="heading-one font-large text-color-two">
-                            ID
-                          </Text>
-                        </Col>
-                        <Col>
-                          <Text className="text-color-one font-large value-one">
-                            {card.inscriptionid}
-                          </Text>
-                        </Col>
-                      </Row>
-
-                      <Row justify={"space-between"}>
-                        <Col>
-                          <Text className="heading-one font-large text-color-two">
-                            Amount
-                          </Text>
-                        </Col>
-                        <Col>
-                          <Text className="text-color-one font-large value-one">
-                            {card.loan_amount}
-                          </Text>
-                        </Col>
-                      </Row>
-
-                      <Row justify={"space-between"}>
-                        <Col>
-                          <Text className="heading-one font-large text-color-two">
-                            APR
-                          </Text>
-                        </Col>
-                        <Col>
-                          <Text className="text-color-one font-large value-one">
-                            {Number(card.apr)}
-                          </Text>
-                        </Col>
-                      </Row>
-                    </CardDisplay>
-                  </Col>
-                </>
-              );
-            })
-          ) : (
-            <Col>
-              <Row justify={"center"}>
-                <MdOutlineCancel color="#6a85f1" size={50} />
-              </Row>
-              <Row justify={"center"}>
-                <Text
-                  className={`${
-                    breakPoint.xs ? "font-medium" : "font-large"
-                  } text-color-one value-one letter-spacing-medium`}
-                >
-                  No Loan Requests Available
-                </Text>
-              </Row>
-            </Col>
-          )}
-        </Row>
-      )}
-
-      <Col>
-        <Flex align="center" gap={10}>
-          <Title level={2} className="gradient-text-one">
-            Your Assets
-          </Title>
-          <Tooltip
-            color={"purple"}
-            title={
-              <span className="text-color-one">
-                Connect any BTC wallet to display your assets!
-              </span>
-            }
-          >
-            <FcInfo className="pointer mt-15" size={25} />
-          </Tooltip>
-        </Flex>
-      </Col>
+          value={radioBtn}
+          size="large"
+          buttonStyle="solid"
+          optionType="button"
+        />
+      </Row>
 
       <Row
-        className="m-top-bottom"
-        style={{ paddingBottom: "30px" }}
-        justify={{
-          md: !borrowData
-            ? "center"
-            : borrowData.length === 0
-            ? "center"
-            : "start",
-          sm: "center",
-        }}
-        gutter={18}
+        className="mt-15"
+        justify={!activeWallet.length ? "center" : "start"}
       >
-        {(activeWallet.includes(XVERSE_WALLET_KEY) ||
-          activeWallet.includes(UNISAT_WALLET_KEY) ||
-          activeWallet.includes(MAGICEDEN_WALLET_KEY)) &&
-        borrowData === null ? (
-          <Loading className={"m-top-bottom"} indicator={<Bars />}></Loading>
-        ) : borrowData === null ? (
-          <Flex className="iconalignment m-bottom">
-            <FaRegSmileWink className="text-color-one" size={25} />
-            <Text className="text-color-one font-large value-one letter-spacing-medium">
-              Connect any BTC wallet !
-            </Text>
-          </Flex>
-        ) : borrowData.length === 0 ? (
-          <Flex className="iconalignment">
-            <ImSad className="text-color-one" size={25} />
-            <Text className="text-color-one font-large value-one letter-spacing-medium">
-              Seems you have no assets!
-            </Text>
-          </Flex>
-        ) : (
-          borrowData.map((card) => {
-            const url = `${process.env.REACT_APP_ORDINALS_CONTENT_API}/content/${card.id}`;
-
-            return (
-              <>
-                <Col key={`${card.id}`} xs={24} sm={12} md={12} lg={8} xl={6}>
-                  <CardDisplay
-                    cover={
-                      card.mimeType === "text/html" ? (
-                        <iframe
-                          title={`${card.id}-borrow_image`}
-                          height={300}
-                          src={url}
-                        />
-                      ) : (
-                        <img
-                          src={url}
-                          alt={`${card.id}-borrow_image`}
-                          width={300}
-                          height={300}
-                        />
-                      )
-                    }
-                    onClick={() => {}}
-                    hoverable={true}
-                    bordered={false}
-                    className={
-                      "card-bg dashboard-card-padding m-top-bottom cardrelative dashboard-cards"
-                    }
-                  >
-                    <Row justify={"space-between"}>
-                      <Col>
-                        <Text className="heading-one font-large text-color-two">
-                          ID
-                        </Text>
-                      </Col>
-                      <Col>
-                        <Text className="text-color-one font-large value-one">
-                          {card.inscriptionNumber}
-                        </Text>
-                      </Col>
-                    </Row>
-                  </CardDisplay>
-                </Col>
-              </>
-            );
-          })
-        )}
+        <Col md={!activeWallet.length ? "" : 24}>
+          {!activeWallet.length ? (
+            <Text className="text-color-one font-medium">Connect wallet!</Text>
+          ) : radioBtn === "Assets" ? (
+            <Row className="mt-20 pad-bottom-30" gutter={32}>
+              <Col xl={24}>
+                <Row className="m-bottom">
+                  <Col xl={24}>
+                    <TableComponent
+                      loading={{
+                        spinning: userAssets === null,
+                        indicator: <Bars />,
+                      }}
+                      pagination={{ pageSize: 5 }}
+                      rowKey={(e) => `${e?.id}-${e?.inscriptionNumber}`}
+                      tableColumns={assetTableColumns}
+                      tableData={userAssets}
+                    />
+                  </Col>
+                </Row>
+              </Col>
+            </Row>
+          ) : radioBtn === "Offers" ? (
+            <Row className="mt-40 pad-bottom-30" gutter={32}>
+              <Col xl={24}>
+                <Row className="m-bottom">
+                  <Col xl={24}>
+                    <TableComponent
+                      loading={{
+                        spinning: userOffers === null,
+                        indicator: <Bars />,
+                      }}
+                      pagination={{ pageSize: 5 }}
+                      rowKey={(e) => `${e?.loanAmount}-${e?.requestId}`}
+                      tableColumns={userRequestColumns}
+                      tableData={userOffers}
+                    />
+                  </Col>
+                </Row>
+              </Col>
+            </Row>
+          ) : radioBtn === "Lendings" ? (
+            <Row className="mt-40 pad-bottom-30" gutter={32}>
+              <Col xl={24}>
+                <Row className="m-bottom">
+                  <Col xl={24}>
+                    <TableComponent
+                      loading={{
+                        spinning: userLends === null,
+                        indicator: <Bars />,
+                      }}
+                      pagination={{ pageSize: 5 }}
+                      rowKey={(e) => `${e?.loanAmount}-${e?.requestId}`}
+                      tableColumns={[
+                        ...BorrowLendColumns,
+                        {
+                          key: "action",
+                          title: " ",
+                          align: "center",
+                          dataIndex: "action",
+                          render: (_, obj) => (
+                            <CustomButton
+                              className={
+                                "click-btn font-weight-600 letter-spacing-small"
+                              }
+                              title={
+                                <Flex align="center" justify="center" gap={10}>
+                                  <span
+                                    className={`text-color-one font-weight-600 pointer iconalignment font-size-16`}
+                                  >
+                                    Repay
+                                  </span>
+                                </Flex>
+                              }
+                            />
+                          ),
+                        },
+                      ]}
+                      tableData={userLends}
+                    />
+                  </Col>
+                </Row>
+              </Col>
+            </Row>
+          ) : radioBtn === "Borrowings" ? (
+            <Row className="mt-40 pad-bottom-30" gutter={32}>
+              <Col xl={24}>
+                <Row className="m-bottom">
+                  <Col xl={24}>
+                    <TableComponent
+                      loading={{
+                        spinning: userBorrows === null,
+                        indicator: <Bars />,
+                      }}
+                      pagination={{ pageSize: 5 }}
+                      rowKey={(e) => `${e?.loanAmount}-${e?.requestId}`}
+                      tableColumns={BorrowLendColumns}
+                      tableData={userBorrows}
+                    />
+                  </Col>
+                </Row>
+              </Col>
+            </Row>
+          ) : (
+            ""
+          )}
+        </Col>
       </Row>
+
       <ModalDisplay
         open={enableTour}
         onOK={handleTour}
@@ -703,6 +799,243 @@ const Portfolio = (props) => {
         }
       >
         <WalletUI isAirdrop={false} />
+      </ModalDisplay>
+
+      {/* Asset Details Modal */}
+      <ModalDisplay
+        width={"50%"}
+        title={
+          <Row className="black-bg white-color font-large letter-spacing-small">
+            Details
+          </Row>
+        }
+        footer={null}
+        open={isModalOpen}
+        onOk={handleOk}
+        onCancel={handleCancel}
+      >
+        <Row className="mt-30">
+          <Col md={6}>
+            <Text className="gradient-text-one font-small font-weight-600">
+              Asset Info
+            </Text>
+          </Col>
+          <Col md={18}>
+            <Row>
+              <Col md={12}>
+                {supplyModalItems &&
+                  (supplyModalItems?.mimeType === "text/html" ? (
+                    <iframe
+                      className="border-radius-30"
+                      title={`${supplyModalItems?.id}-borrow_image`}
+                      height={300}
+                      width={300}
+                      src={`${CONTENT_API}/content/${supplyModalItems?.id}`}
+                    />
+                  ) : (
+                    <>
+                      <img
+                        src={`${CONTENT_API}/content/${supplyModalItems?.id}`}
+                        alt={`${supplyModalItems?.id}-borrow_image`}
+                        className="border-radius-30"
+                        width={125}
+                      />
+                      <Row>
+                        <Text className="text-color-one ml">
+                          <span className="font-weight-600 font-small ">
+                            ${" "}
+                          </span>
+                          {(
+                            (Number(supplyModalItems?.collection?.floorPrice) /
+                              BTC_ZERO) *
+                            btcValue
+                          ).toFixed(2)}
+                        </Text>
+                      </Row>
+                    </>
+                  ))}
+              </Col>
+
+              <Col md={12}>
+                <Row>
+                  {" "}
+                  <Flex vertical>
+                    <Text className="text-color-two font-small">
+                      Inscription Number
+                    </Text>
+                    <Text className="text-color-one font-small font-weight-600">
+                      #{supplyModalItems?.inscriptionNumber}
+                    </Text>
+                  </Flex>
+                </Row>
+                <Row>
+                  {" "}
+                  <Flex vertical>
+                    <Text className="text-color-two font-small">
+                      Inscription Id
+                    </Text>
+
+                    <Text className="text-color-one font-small font-weight-600 iconalignment">
+                      {sliceAddress(supplyModalItems?.id, 7)}
+                      <Tooltip
+                        arrow
+                        title={copy}
+                        trigger={"hover"}
+                        placement="top"
+                      >
+                        <MdContentCopy
+                          className="pointer"
+                          onClick={() => {
+                            navigator.clipboard.writeText(supplyModalItems?.id);
+                            setCopy("Copied");
+                            setTimeout(() => {
+                              setCopy("Copy");
+                            }, 2000);
+                          }}
+                          size={20}
+                          color="#764ba2"
+                        />
+                      </Tooltip>
+                    </Text>
+                  </Flex>
+                </Row>
+              </Col>
+            </Row>
+          </Col>
+        </Row>
+
+        <Divider />
+        <Row className="mt-15">
+          <Col md={6}>
+            <Text className="gradient-text-one font-small font-weight-600">
+              Collection Info
+            </Text>
+          </Col>
+          <Col md={18}>
+            <Row justify={"center"}>
+              <Text className="gradient-text-two font-xslarge font-weight-600 ">
+                {Capitalaize(supplyModalItems?.collection?.symbol)}
+              </Text>
+            </Row>
+
+            <Row className="mt-30" justify={"space-between"}>
+              <Flex vertical className="borrowDataStyle">
+                <Text className="text-color-two font-small">Floor Price</Text>
+
+                <Text className="text-color-one font-small font-weight-600">
+                  {supplyModalItems?.collection.floorPrice / BTC_ZERO}
+                </Text>
+              </Flex>
+              <Flex vertical className="borrowDataStyle">
+                <Text className="text-color-two font-small">Total Listed</Text>
+
+                <Text className="text-color-one font-small font-weight-600">
+                  {supplyModalItems?.collection.totalListed}
+                </Text>
+              </Flex>
+              <Flex vertical className="borrowDataStyle">
+                <Text className="text-color-two font-small">Total Volume</Text>
+
+                <Text className="text-color-one font-small font-weight-600">
+                  {supplyModalItems?.collection.totalVolume}
+                </Text>
+              </Flex>
+            </Row>
+
+            <Row justify={"space-between"} className="m-25">
+              <Flex vertical>
+                <Text className="text-color-two font-small">Owners</Text>
+
+                <Row justify={"center"}>
+                  <Text className="text-color-one font-small font-weight-600">
+                    {supplyModalItems?.collection.owners}
+                  </Text>
+                </Row>
+              </Flex>
+              <Flex vertical>
+                <Text className="text-color-two font-small ">
+                  Pending Transactions
+                </Text>
+                <Row justify={"center"}>
+                  <Text className="text-color-one font-small font-weight-600">
+                    {supplyModalItems?.collection.pendingTransactions}
+                  </Text>
+                </Row>
+              </Flex>
+              <Flex vertical>
+                <Text className="text-color-two font-small">Supply</Text>
+                <Row justify={"center"}>
+                  <Text className="text-color-one font-small font-weight-600">
+                    {supplyModalItems?.collection.supply}
+                  </Text>
+                </Row>
+              </Flex>
+            </Row>
+          </Col>
+        </Row>
+      </ModalDisplay>
+
+      {/* Custody supply address display */}
+      <ModalDisplay
+        width={"25%"}
+        open={handleSupplyModal}
+        onCancel={handleCancel}
+        onOk={handleOk}
+        footer={null}
+      >
+        <Row justify={"center"}>
+          <IoWarningSharp size={50} color="#f46d6d" />
+        </Row>
+        <Row justify={"center"}>
+          <Text className="text-color-one font-xlarge font-weight-600 m-25">
+            Reserved Address
+          </Text>
+        </Row>
+        <Row>
+          <span className="text-color-two mt-15">
+            This is the token reserved contract address, please do not transfer
+            directly through the CEX, you will not be able to confirm the source
+            of funds, and you will not be responsible for lost funds.
+          </span>
+        </Row>
+        <Row
+          justify={"space-around"}
+          align={"middle"}
+          className="mt-30  border "
+        >
+          <Col md={18}>
+            <span className="text-color-two">
+              bc1p3s9nmllhlslppp6520gzfmnwa5hfmppns2zjrd5s6w06406gdg3snenzn7
+            </span>
+          </Col>
+          <Col md={3}>
+            <Row justify={"end"}>
+              <Tooltip arrow title={copy} trigger={"hover"} placement="top">
+                <MdContentCopy
+                  className="pointer"
+                  onClick={() => {
+                    navigator.clipboard.writeText(
+                      "bc1pjj4uzw3svyhezxqq7cvqdxzf48kfhklxuahyx8v8u69uqfmt0udqlhwhwz"
+                    );
+                    setCopy("Copied");
+                    setTimeout(() => {
+                      setCopy("Copy");
+                    }, 2000);
+                  }}
+                  size={20}
+                  color="#764ba2"
+                />
+              </Tooltip>
+            </Row>
+          </Col>
+        </Row>
+        <Row>
+          <CustomButton
+            onClick={handleCancel}
+            title="I Know"
+            className={"m-25 width background text-color-one "}
+          />
+        </Row>
       </ModalDisplay>
     </>
   );

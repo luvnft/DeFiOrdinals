@@ -1,31 +1,38 @@
 import { Actor, HttpAgent } from "@dfinity/agent";
-import { Principal } from "@dfinity/principal";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { AffiliatesIdlFactory } from "../../affiliate_canister";
-import { ckBtcIdlFactory } from "../../ckBTC_canister";
-import { ckEthIdlFactory } from "../../ckETH_canister";
 import Notify from "../../component/notification";
 import { apiFactory } from "../../ordinal_canister";
 import {
-  setAffiliateCanister,
   setAgent,
-  setAirDropData,
-  setAirPoints,
+  setAllBorrowRequest,
+  setAllLendRequest,
   setApprovedCollection,
   setAptosValue,
+  setBorrowCollateral,
   setBtcValue,
-  setCkBtcActorAgent,
-  setCkBtcAgent,
-  setCkEthActorAgent,
-  setCkEthAgent,
   setCollection,
-  setEthValue,
-  setwithdrawAgent,
+  setUserAssets,
+  setUserCollateral,
 } from "../../redux/slice/constant";
-import { setPlugPrincipalId } from "../../redux/slice/wallet";
-import { API_METHODS, apiUrl } from "../../utils/common";
+import {
+  Function,
+  Module,
+  client,
+  contractAddress,
+} from "../../utils/aptosService";
+import {
+  API_METHODS,
+  IS_USER,
+  MAGICEDEN_WALLET_KEY,
+  UNISAT_WALLET_KEY,
+  XVERSE_WALLET_KEY,
+  agentCreator,
+  apiUrl,
+  aptos_canister,
+  calculateAPY,
+} from "../../utils/common";
 
 export const propsContainer = (Component) => {
   function ComponentWithRouterProp(props) {
@@ -35,19 +42,29 @@ export const propsContainer = (Component) => {
     const location = useLocation();
     const reduxState = useSelector((state) => state);
     const api_agent = reduxState.constant.agent;
+    const activeWallet = reduxState.wallet.active;
     const aptosvalue = reduxState.constant.aptosvalue;
+    const xverseAddress = reduxState.wallet.xverse.ordinals.address;
+    const unisatAddress = reduxState.wallet.unisat.address;
+    const approvedCollections = reduxState.constant.approvedCollections;
+    const magicEdenAddress = reduxState.wallet.magicEden.ordinals.address;
+    const petraAddress = reduxState.wallet.petra.address;
     const collections = reduxState.constant.collection;
     const ckBtcAgent = reduxState.constant.ckBtcAgent;
     const ckBtcActorAgent = reduxState.constant.ckBtcActorAgent;
-    const affiliateCanister = reduxState.constant.affiliateCanister;
     const ckEthAgent = reduxState.constant.ckEthAgent;
     const ckEthActorAgent = reduxState.constant.ckEthActorAgent;
     const withdrawAgent = reduxState.constant.withdrawAgent;
-    const principalId = reduxState.wallet.plug.principalId;
-    const xverseAddress = reduxState.wallet.xverse.ordinals.address;
-    const unisatAddress = reduxState.wallet.unisat.address;
+    const userAssets = reduxState.constant.userAssets;
 
-    const [isPlugError, setIsPlugError] = useState(false);
+    const address = xverseAddress
+      ? xverseAddress
+      : unisatAddress
+      ? unisatAddress
+      : magicEdenAddress;
+
+    const aptosCanisterId = process.env.REACT_APP_ORDINAL_CANISTER_ID;
+    const WAHEED_ADDRESS = process.env.REACT_APP_WAHEED_ADDRESS;
 
     const btcPrice = async () => {
       const BtcData = await API_METHODS.get(
@@ -67,22 +84,6 @@ export const propsContainer = (Component) => {
         }
       } catch (error) {
         // Notify("error", "Failed to fetch ckBtc");
-      }
-    };
-
-    const fetchETHLiveValue = async () => {
-      try {
-        const EthData = await API_METHODS.get(
-          `${apiUrl.Asset_server_base_url}/api/v1/fetch/EthPrice`
-        );
-        if (EthData.data.data[0]?.length) {
-          const btcValue = EthData.data.data[0].flat();
-          dispatch(setEthValue(btcValue[1]));
-        } else {
-          fetchETHLiveValue();
-        }
-      } catch (error) {
-        // Notify("error", "Failed to fetch ckEth");
       }
     };
 
@@ -107,42 +108,6 @@ export const propsContainer = (Component) => {
       }
     };
 
-    const fetchUserPoints = async () => {
-      try {
-        const claimedPoints = await affiliateCanister.getUserPoints(
-          Principal.fromText(principalId)
-        );
-        dispatch(setAirPoints(Number(claimedPoints)));
-      } catch (error) {
-        console.log("Get Air Drop error", error);
-      }
-    };
-
-    const fetchAirDropData = async () => {
-      try {
-        const airDropData = await affiliateCanister.getAirDrops(
-          Principal.fromText(principalId)
-        );
-        if (airDropData.ordinalAddress) {
-          dispatch(setAirDropData(airDropData));
-        }
-      } catch (error) {
-        console.log("Get Air Drop error", error);
-      }
-    };
-
-    const verifyConnection = async () => {
-      if (principalId) {
-        const connected = await window.ic.plug.isConnected();
-        if (!connected) {
-          // Notify("warning", "Connection aborted, please reconnect wallet!");
-          return false;
-        } else {
-          return true;
-        }
-      }
-    };
-
     useEffect(() => {
       (async () => {
         try {
@@ -153,7 +118,7 @@ export const propsContainer = (Component) => {
 
             const agent = Actor.createActor(apiFactory, {
               agent: ordinalAgent,
-              canisterId: process.env.REACT_APP_ORDINAL_CANISTER_ID,
+              canisterId: aptosCanisterId,
             });
 
             dispatch(setAgent(agent));
@@ -166,146 +131,8 @@ export const propsContainer = (Component) => {
     }, [dispatch]);
 
     useEffect(() => {
-      (async () => {
-        try {
-          if (!ckBtcActorAgent) {
-            const ckBtcHttpAgent = new HttpAgent({
-              host: process.env.REACT_APP_HTTP_AGENT_ACTOR_HOST,
-            });
-
-            const ckBtcActorAgent = Actor.createActor(ckBtcIdlFactory, {
-              agent: ckBtcHttpAgent,
-              canisterId: process.env.REACT_APP_BTC_CANISTER_ID,
-            });
-
-            dispatch(setCkBtcActorAgent(ckBtcActorAgent));
-          }
-        } catch (error) {
-          Notify("error", error.message);
-        }
-      })();
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [dispatch]);
-
-    useEffect(() => {
-      (async () => {
-        try {
-          if (!ckEthActorAgent) {
-            const ckEthHttpAgent = new HttpAgent({
-              host: process.env.REACT_APP_HTTP_AGENT_ACTOR_HOST,
-            });
-
-            const ckEthActorAgent = Actor.createActor(ckEthIdlFactory, {
-              agent: ckEthHttpAgent,
-              canisterId: process.env.REACT_APP_ETH_CANISTER_ID,
-            });
-
-            dispatch(setCkEthActorAgent(ckEthActorAgent));
-          }
-        } catch (error) {
-          Notify("error", error.message);
-        }
-      })();
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [dispatch]);
-
-    useEffect(() => {
-      (async () => {
-        try {
-          if (window?.ic?.plug) {
-            const isVerified = await verifyConnection();
-            if (isVerified) {
-              if (!ckBtcAgent) {
-                // Btc canister for transactions
-                const ckBtcAgent = await window.ic?.plug.createActor({
-                  canisterId: process.env.REACT_APP_BTC_CANISTER_ID,
-                  interfaceFactory: ckBtcIdlFactory,
-                });
-
-                dispatch(setCkBtcAgent(ckBtcAgent));
-              }
-
-              if (!ckEthAgent) {
-                const ckEthAgent = await window.ic?.plug.createActor({
-                  canisterId: process.env.REACT_APP_ETH_CANISTER_ID,
-                  interfaceFactory: ckEthIdlFactory,
-                });
-
-                dispatch(setCkEthAgent(ckEthAgent));
-              }
-
-              if (!withdrawAgent) {
-                // My Ordinal Canister for withdraw purpose
-                const withdrawAgent = await window.ic?.plug.createActor({
-                  canisterId: process.env.REACT_APP_ORDINAL_CANISTER_ID,
-                  interfaceFactory: apiFactory,
-                });
-
-                dispatch(setwithdrawAgent(withdrawAgent));
-              }
-
-              if (!affiliateCanister) {
-                // Btc canister for transactions
-                const affiliateAgent = await window.ic?.plug.createActor({
-                  canisterId: process.env.REACT_APP_AFFILIATES_CANISTER_ID,
-                  interfaceFactory: AffiliatesIdlFactory,
-                });
-
-                dispatch(setAffiliateCanister(affiliateAgent));
-              }
-            }
-          }
-        } catch (error) {
-          console.log("error", error);
-        }
-      })();
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [dispatch]);
-
-    useEffect(() => {
-      (async () => {
-        if (
-          principalId &&
-          affiliateCanister &&
-          (xverseAddress || unisatAddress)
-        ) {
-          await fetchUserPoints();
-        }
-      })();
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [
-      dispatch,
-      affiliateCanister,
-      principalId,
-      xverseAddress,
-      unisatAddress,
-    ]);
-
-    useEffect(() => {
-      (async () => {
-        if (
-          principalId &&
-          affiliateCanister &&
-          (xverseAddress || unisatAddress)
-        ) {
-          await fetchAirDropData();
-        }
-      })();
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [
-      dispatch,
-      affiliateCanister,
-      principalId,
-      xverseAddress,
-      unisatAddress,
-    ]);
-
-    useEffect(() => {
       //Fetching BTC Value
       fetchBTCLiveValue();
-
-      //Fetching ETH Value
-      fetchETHLiveValue();
 
       //Fetch aptos value
       fetchAptosPrice();
@@ -316,16 +143,6 @@ export const propsContainer = (Component) => {
       (() => {
         setInterval(async () => {
           if (ckBtcAgent) fetchBTCLiveValue();
-        }, [300000]);
-        return () => clearInterval();
-      })();
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [api_agent, dispatch]);
-
-    useEffect(() => {
-      (() => {
-        setInterval(async () => {
-          if (ckEthAgent) fetchETHLiveValue();
         }, [300000]);
         return () => clearInterval();
       })();
@@ -346,27 +163,313 @@ export const propsContainer = (Component) => {
       (async () => {
         if (api_agent) {
           const result = await api_agent.get_collections();
+          const approvedCollections = await api_agent.getApproved_Collections();
           const collections = JSON.parse(result);
-          console.log("collections", collections);
-          if (collections[0]?.symbol) {
-            const collectionPromise = collections.map(async (asset) => {
-              return new Promise(async (resolve, reject) => {
+          if (approvedCollections.length) {
+            const collectionPromise = approvedCollections.map(async (asset) => {
+              const [, col] = asset;
+              const collection = collections.find(
+                (predict) => predict.symbol === col.collectionName
+              );
+              return new Promise(async (resolve, _) => {
                 const { data } = await API_METHODS.get(
-                  `${apiUrl.Asset_server_base_url}/api/v2/fetch/collection/${asset.symbol}`
+                  `${apiUrl.Asset_server_base_url}/api/v2/fetch/collection/${col.collectionName}`
                 );
-                resolve({ ...asset, ...data });
+                resolve({ ...col, ...data.data, ...collection });
               });
             });
 
             const collectionDetails = await Promise.all(collectionPromise);
-            console.log("collectionDetails", collectionDetails);
-            dispatch(setApprovedCollection(collectionDetails));
+            const finalResult = collectionDetails.map((col) => {
+              const { yield: yields, terms } = col;
+              const term = Number(terms);
+              const APY = calculateAPY(yields, term);
+              const LTV = 0;
+              return {
+                ...col,
+                terms: term,
+                APY,
+                LTV,
+              };
+            });
+            dispatch(setApprovedCollection(finalResult));
           }
           dispatch(setCollection(collections));
         }
       })();
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [api_agent, dispatch]);
+
+    const getCollectionDetails = async (filteredData) => {
+      try {
+        const isFromApprovedAssets = filteredData.map(async (asset) => {
+          return new Promise(async (resolve, reject) => {
+            const result = await API_METHODS.get(
+              `${apiUrl.Asset_server_base_url}/api/v2/fetch/asset/${asset.id}`
+            );
+            resolve(...result.data?.data?.tokens);
+          });
+        });
+        const revealedPromise = await Promise.all(isFromApprovedAssets);
+        let collectionSymbols = {};
+        collections.forEach(
+          (collection) =>
+            (collectionSymbols = {
+              ...collectionSymbols,
+              [collection.symbol]: collection,
+            })
+        );
+        const collectionNames = collections.map(
+          (collection) => collection.symbol
+        );
+        const isFromApprovedCollections = revealedPromise.filter((assets) =>
+          collectionNames.includes(assets.collectionSymbol)
+        );
+
+        const finalPromise = isFromApprovedCollections.map((asset) => {
+          const collection = collectionSymbols[asset.collectionSymbol];
+          return {
+            ...asset,
+            collection,
+          };
+        });
+        return finalPromise;
+      } catch (error) {
+        console.log("getCollectionDetails error", error);
+      }
+    };
+
+    const fetchWalletAssets = async (address) => {
+      try {
+        const result = await API_METHODS.get(
+          `${apiUrl.Asset_server_base_url}/api/v1/fetch/assets/${address}`
+        );
+        if (result.data?.data?.length) {
+          const filteredData = result.data.data.filter(
+            (asset) =>
+              asset.mimeType === "text/html" ||
+              asset.mimeType === "image/webp" ||
+              asset.mimeType === "image/jpeg" ||
+              asset.mimeType === "image/png" ||
+              asset.mimeType === "image/svg+xml"
+          );
+          const finalPromise = await getCollectionDetails(filteredData);
+          return finalPromise;
+        }
+      } catch (error) {
+        console.log("error", error);
+      }
+    };
+
+    const getCollaterals = async () => {
+      try {
+        const API = agentCreator(apiFactory, aptos_canister);
+        const userAssets = await API.getUserSupply(
+          IS_USER ? address : WAHEED_ADDRESS
+        );
+        const supplyData = userAssets.map((asset) => JSON.parse(asset));
+        const colResult = await getCollectionDetails(supplyData);
+
+        // --------------------------------------------------
+
+        const addressPayload = {
+          type: "entry_function_payload",
+          function: `${contractAddress}::${Module.ORDINAL_NFT}::${Function.VIEW.GET_ORDINAL_ADDRESSES}`,
+          arguments: [petraAddress],
+          type_arguments: [],
+        };
+        const [tokenAddress] = await client.view(addressPayload);
+
+        const promises = tokenAddress.map((token) => {
+          return new Promise(async (res) => {
+            const payload = {
+              type: "entry_function_payload",
+              function: `${contractAddress}::${Module.ORDINAL_NFT}::${Function.VIEW.GET_ORDINAL}`,
+              arguments: [token],
+              type_arguments: [],
+            };
+            const tokenData = await client.view(payload);
+            res([token, tokenData[2]]);
+          });
+        });
+
+        const tokens = await Promise.all(promises);
+        const inscriptionArray = tokens.map((token) => Number(token[1]));
+
+        const finalData = colResult.map((asset) => {
+          let data = { ...asset, collection: {} };
+          approvedCollections.forEach((col) => {
+            if (col.symbol === asset.collectionSymbol) {
+              let tokenAddress = "";
+              if (inscriptionArray.includes(asset.inscriptionNumber)) {
+                const index = inscriptionArray.indexOf(asset.inscriptionNumber);
+                const array = tokens[index];
+                tokenAddress = array[0];
+              }
+              data = {
+                ...asset,
+                tokenAddress,
+                collection: col,
+                isToken: inscriptionArray.includes(asset.inscriptionNumber)
+                  ? true
+                  : false,
+              };
+            }
+          });
+          return data;
+        });
+
+        const borrowCollateral = finalData.filter((asset) => asset.isToken);
+        dispatch(setUserCollateral(finalData));
+        dispatch(setBorrowCollateral(borrowCollateral));
+      } catch (error) {
+        console.log("Collateral fetching error", error);
+      }
+    };
+
+    const getAllBorrowRequest = async () => {
+      try {
+        const payload = {
+          type: "entry_function_payload",
+          function: `${contractAddress}::${Module.LOAN_LEDGER}::${Function.VIEW.GET_ALL_BORROW_REQUESTS}`,
+          arguments: [],
+          type_arguments: [],
+        };
+        const [borrowRequest] = await client.view(payload);
+
+        const promises = borrowRequest.map((req) => {
+          return new Promise(async (res) => {
+            const payload = {
+              type: "entry_function_payload",
+              function: `${contractAddress}::${Module.ORDINAL_NFT}::${Function.VIEW.GET_ORDINAL}`,
+              arguments: [req.ordinal_token],
+              type_arguments: [],
+            };
+            const [collectionSymbol, contentURL, inscriptionNumber, id] =
+              await client.view(payload);
+            res({
+              ...req,
+              collectionSymbol,
+              contentURL,
+              inscriptionNumber,
+              id,
+            });
+          });
+        });
+
+        const requests = await Promise.all(promises);
+        dispatch(setAllBorrowRequest(requests));
+      } catch (error) {
+        console.log("Get all borrow request error", error);
+      }
+    };
+
+    const getAllLendRequest = async () => {
+      try {
+        const payload = {
+          type: "entry_function_payload",
+          function: `${contractAddress}::${Module.LOAN_LEDGER}::${Function.VIEW.GET_ALL_LOANS}`,
+          arguments: [],
+          type_arguments: [],
+        };
+        const [lendRequest] = await client.view(payload);
+
+        const promises = lendRequest.map((req) => {
+          return new Promise(async (res) => {
+            const payload = {
+              type: "entry_function_payload",
+              function: `${contractAddress}::${Module.ORDINAL_NFT}::${Function.VIEW.GET_ORDINAL}`,
+              arguments: [req.ordinal_token],
+              type_arguments: [],
+            };
+            const [collectionSymbol, contentURL, inscriptionNumber, id] =
+              await client.view(payload);
+            res({
+              ...req,
+              collectionSymbol,
+              contentURL,
+              inscriptionNumber,
+              id,
+            });
+          });
+        });
+
+        const requests = await Promise.all(promises);
+
+        const requestPromises = requests.map((asset) => {
+          return new Promise(async (res) => {
+            const getPayload = {
+              type: "entry_function_payload",
+              function: `${contractAddress}::${Module.LOAN_LEDGER}::${Function.VIEW.GET_BORROW_REQUEST}`,
+              arguments: [asset.borrower, asset.ordinal_token],
+              type_arguments: [],
+            };
+            const [ordinal] = await client.view(getPayload);
+            res({
+              ...asset,
+              ...ordinal.vec[0],
+            });
+          });
+        });
+        const revealed = await Promise.all(requestPromises);
+        dispatch(setAllLendRequest(revealed));
+      } catch (error) {
+        console.log("Get all borrow request error", error);
+      }
+    };
+
+    useEffect(() => {
+      (async () => {
+        if (
+          api_agent &&
+          (activeWallet.includes(XVERSE_WALLET_KEY) ||
+            activeWallet.includes(UNISAT_WALLET_KEY) ||
+            activeWallet.includes(MAGICEDEN_WALLET_KEY)) &&
+          collections[0]?.symbol &&
+          !userAssets
+        ) {
+          const result = await fetchWalletAssets(
+            IS_USER
+              ? xverseAddress
+                ? xverseAddress
+                : unisatAddress
+                ? unisatAddress
+                : magicEdenAddress
+              : WAHEED_ADDRESS
+          );
+
+          const testData = result?.reduce((acc, curr) => {
+            // Find if there is an existing item with the same collectionSymbol
+            let existingItem = acc.find(
+              (item) => item.collectionSymbol === curr.collectionSymbol
+            );
+
+            if (existingItem) {
+              // If found, add the current item to the duplicates array
+              if (!existingItem.duplicates) {
+                existingItem.duplicates = [];
+              }
+              existingItem.duplicates.push(curr);
+            } else {
+              // If not found, add the current item to the accumulator
+              acc.push(curr);
+            }
+
+            return acc;
+          }, []);
+
+          // Without getting duplicate
+          // const uniqueData = result?.filter(
+          //   (obj, index, self) =>
+          //     index ===
+          //     self.findIndex((o) => o.collectionSymbol === obj.collectionSymbol)
+          // );
+
+          dispatch(setUserAssets(testData));
+        }
+      })();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeWallet, api_agent, dispatch, collections]);
 
     useEffect(() => {
       (async () => {
@@ -385,35 +488,52 @@ export const propsContainer = (Component) => {
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [api_agent, dispatch]);
 
+    // useEffect(() => {
+    //   (async () => {
+    //     try {
+    //       if (petraAddress) {
+    //         const payload = {
+    //           type: "entry_function_payload",
+    //           function: `${contractAddress}::${Module.BORROW}::${Function.GET_ALL_BORROW_REQUESTS}`,
+    //           arguments: [petraAddress],
+    //           type_arguments: [],
+    //         };
+    //         const response = await client.view(payload);
+    //         console.log("response", response);
+    //         dispatch(setOffers(response[0]));
+    //       }
+    //     } catch (error) {
+    //       console.log("Failed to fetch resource:", error);
+    //     }
+    //   })();
+    // }, [dispatch, petraAddress]);
+
     useEffect(() => {
-      (async () => {
-        if (principalId) {
-          const result = await window.ic.plug.isConnected();
-          if (result) {
-            if (window.ic.plug.principalId) {
-              dispatch(setPlugPrincipalId(window.ic.plug.principalId));
-            }
-            setIsPlugError(false);
-          } else {
-            if (!isPlugError) {
-              setIsPlugError(true);
-              Notify(
-                "warning",
-                "Please reconnect your wallet as account changed!"
-              );
-            }
-          }
-        } else {
-          setIsPlugError(false);
-        }
-      })();
-    }, [dispatch, principalId, isPlugError]);
+      if (activeWallet.length && approvedCollections[0]) {
+        getCollaterals();
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeWallet, approvedCollections]);
+
+    useEffect(() => {
+      if (activeWallet.length && approvedCollections[0]) {
+        getAllBorrowRequest();
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeWallet, approvedCollections]);
+
+    useEffect(() => {
+      if (activeWallet.length && approvedCollections[0]) {
+        getAllLendRequest();
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeWallet, approvedCollections]);
 
     return (
       <Component
         {...props}
         router={{ location, navigate, params }}
-        redux={{ dispatch, reduxState, isPlugError }}
+        redux={{ dispatch, reduxState }}
         wallet={{
           api_agent,
           ckBtcAgent,
@@ -421,6 +541,9 @@ export const propsContainer = (Component) => {
           withdrawAgent,
           ckBtcActorAgent,
           ckEthActorAgent,
+          getCollaterals,
+          getAllLendRequest,
+          getAllBorrowRequest,
         }}
       />
     );

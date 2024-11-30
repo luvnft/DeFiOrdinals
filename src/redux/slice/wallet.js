@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { MAGICEDEN_WALLET_KEY, PETRA_WALLET_KEY, PLUG_WALLET_KEY, UNISAT_WALLET_KEY, XVERSE_WALLET_KEY } from "../../utils/common";
+import { MAGICEDEN_WALLET_KEY, MARTIN_WALLET_KEY, NIGHTLY_WALLET_KEY, PETRA_WALLET_KEY, UNISAT_WALLET_KEY, XVERSE_WALLET_KEY } from "../../utils/common";
 
 const state = {
   xverse: {
@@ -20,14 +20,19 @@ const state = {
     signature: null,
     btcBalance: 0.0,
   },
-  plug: {
-    key: {},
-    principalId: null,
-  },
   petra: {
     publicKey: null,
     address: null,
   },
+  martin: {
+    publicKey: null,
+    address: null,
+  },
+  nightly: {
+    publicKey: null,
+    address: null,
+  },
+  isTableCreated: false,
   active: [],
 };
 
@@ -66,24 +71,37 @@ const walletSlice = createSlice({
       state.active.push(UNISAT_WALLET_KEY);
     },
 
-    setPlugKey: (state, action) => {
-      state.plug.key = action.payload;
-    },
-
     setPetraKey: (state, action) => {
       state.petra.publicKey = action.payload;
-    },
-
-    setPlugPrincipalId: (state, action) => {
-      state.plug.principalId = action.payload;
-      if (action.payload && !state.active.includes(PLUG_WALLET_KEY))
-        state.active.push(PLUG_WALLET_KEY);
     },
 
     setPetraAddress: (state, action) => {
       state.petra.address = action.payload;
       if (action.payload && !state.active.includes(PETRA_WALLET_KEY))
         state.active.push(PETRA_WALLET_KEY);
+    },
+
+    setMartinAddress: (state, action) => {
+      state.martin.address = action.payload;
+      if (action.payload && !state.active.includes(MARTIN_WALLET_KEY))
+        state.active.push(MARTIN_WALLET_KEY);
+    },
+
+    setMartinKey: (state, action) => {
+      state.martin.publicKey = action.payload;
+    },
+
+    setNightlyAddress: (state, action) => {
+      state.nightly.address = action.payload;
+      state.active.push(NIGHTLY_WALLET_KEY);
+    },
+
+    setNightlyKey: (state, action) => {
+      state.nightly.publicKey = action.payload;
+    },
+
+    setTableCreated: (state, action) => {
+      state.isTableCreated = action.payload;
     },
 
     clearWalletState: (state, action) => {
@@ -100,11 +118,6 @@ const walletSlice = createSlice({
           publicKey: null,
           btcBalance: 0.0,
         };
-      } else if (action.payload === PLUG_WALLET_KEY) {
-        state.plug = {
-          key: {},
-          principalId: null,
-        };
       } else if (action.payload === MAGICEDEN_WALLET_KEY) {
         state.magicEden = {
           ordinals: {},
@@ -112,8 +125,18 @@ const walletSlice = createSlice({
           signature: null,
           btcBalance: 0.0,
         };
-      } else {
+      } else if (action.payload === PETRA_WALLET_KEY) {
         state.petra = {
+          publicKey: null,
+          address: null
+        }
+      } else if (action.payload === MARTIN_WALLET_KEY) {
+        state.martin = {
+          publicKey: null,
+          address: null
+        }
+      } else if (action.payload === NIGHTLY_WALLET_KEY) {
+        state.nightly = {
           publicKey: null,
           address: null
         }
@@ -124,14 +147,17 @@ const walletSlice = createSlice({
 });
 
 export const {
-  setPlugKey,
   setPetraKey,
   setXverseBtc,
+  setMartinKey,
+  setNightlyKey,
   setPetraAddress,
+  setTableCreated,
   setXversePayment,
+  setMartinAddress,
   clearWalletState,
   setXverseOrdinals,
-  setPlugPrincipalId,
+  setNightlyAddress,
   setXverseSignature,
   setUnisatCredentials,
   setMagicEdenCredentials,
